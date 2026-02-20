@@ -1,122 +1,485 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "theme": "aspen",
+  "name": "Medplum",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#0D9373",
+    "light": "#55D799",
+    "dark": "#0D9373"
   },
   "favicon": "/favicon.svg",
   "navigation": {
-    "tabs": [
+    "groups": [
       {
-        "tab": "Guides",
-        "groups": [
-          {
-            "group": "Getting started",
-            "pages": [
-              "index",
-              "quickstart",
-              "development"
-            ]
-          },
-          {
-            "group": "Customization",
-            "pages": [
-              "essentials/settings",
-              "essentials/navigation"
-            ]
-          },
-          {
-            "group": "Writing content",
-            "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
-            ]
-          }
+        "group": "Docs",
+        "pages": [
+          "docs"
         ]
       },
       {
-        "tab": "API reference",
-        "groups": [
-          {
-            "group": "API documentation",
-            "pages": [
-              "api-reference/introduction"
-            ]
-          },
-          {
-            "group": "Endpoint examples",
-            "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
-            ]
-          }
+        "group": "Tutorials",
+        "pages": [
+          "docs/tutorials",
+          "docs/tutorials/register",
+          "docs/tutorials/importing-sample-data",
+          "docs/tutorials/browse-sample-data",
+          "docs/tutorials/medplum-hello-world"
+        ]
+      },
+      {
+        "group": "Migrating to Medplum",
+        "pages": [
+          "docs/migration",
+          "docs/migration/migration-planning",
+          "docs/migration/migration-sequence",
+          "docs/migration/convert-to-fhir",
+          "docs/migration/migration-pipelines",
+          "docs/migration/adoption-strategy"
+        ]
+      },
+      {
+        "group": "Medplum Provider",
+        "pages": [
+          "docs/provider",
+          "docs/provider/getting-started",
+          "docs/provider/patient-profile",
+          "docs/provider/schedule",
+          "docs/provider/visits"
+        ]
+      },
+      {
+        "group": "Fhir Basics",
+        "pages": [
+          "docs/fhir-basics"
+        ]
+      },
+      {
+        "group": "Charting",
+        "pages": [
+          "docs/charting",
+          "docs/charting/patient-demographics",
+          "docs/charting/ordering-labs-imaging",
+          "docs/charting/implantable-devices",
+          "docs/charting/allergy-intolerances",
+          "docs/charting/capturing-vital-signs",
+          "docs/charting/external-documents",
+          "docs/charting/representing-diagnoses"
+        ]
+      },
+      {
+        "group": "Questionnaires & Assessments",
+        "pages": [
+          "docs/questionnaires",
+          "docs/questionnaires/basic-tutorial",
+          "docs/questionnaires/questionnaires-and-responses",
+          "docs/questionnaires/structured-data-capture"
+        ]
+      },
+      {
+        "group": "Care Planning and Navigation",
+        "pages": [
+          "docs/careplans",
+          "docs/careplans/tasks",
+          "docs/careplans/clinical-decision-support",
+          "docs/careplans/diagnostic-catalog",
+          "docs/careplans/reference-ranges",
+          "docs/careplans/loinc",
+          "docs/careplans/referrals",
+          "docs/careplans/referrals/creation-and-capture",
+          "docs/careplans/referrals/transmition-and-tracking",
+          "docs/careplans/referrals/fhir-resource-examples"
+        ]
+      },
+      {
+        "group": "Administration",
+        "pages": [
+          "docs/administration/provider-directory"
+        ]
+      },
+      {
+        "group": "Scheduling",
+        "pages": [
+          "docs/scheduling",
+          "docs/scheduling/defining-availability"
+        ]
+      },
+      {
+        "group": "Messaging & Communications",
+        "pages": [
+          "docs/communications",
+          "docs/communications/async-encounters",
+          "docs/communications/organizing-communications"
+        ]
+      },
+      {
+        "group": "Medications",
+        "pages": [
+          "docs/medications",
+          "docs/medications/e-prescibe",
+          "docs/medications/formulary",
+          "docs/medications/medication-codes",
+          "docs/medications/representing-prescriptions-and-medication-orders"
+        ]
+      },
+      {
+        "group": "Labs Imaging",
+        "pages": [
+          "docs/labs-imaging"
+        ]
+      },
+      {
+        "group": "Billing and Payments",
+        "pages": [
+          "docs/billing",
+          "docs/billing/patient-insurance",
+          "docs/billing/insurance-eligibility-checks",
+          "docs/billing/creating-cms1500",
+          "docs/billing/creating-superbills"
+        ]
+      },
+      {
+        "group": "FHIR Datastore",
+        "pages": [
+          "docs/fhir-datastore",
+          "docs/fhir-datastore/creating-data",
+          "docs/fhir-datastore/reading-data",
+          "docs/fhir-datastore/updating-data",
+          "docs/fhir-datastore/deleting-data",
+          "docs/fhir-datastore/binary-data",
+          "docs/fhir-datastore/resource-history",
+          "docs/fhir-datastore/fhir-batch-requests",
+          "docs/fhir-datastore/working-with-fhir",
+          "docs/fhir-datastore/profiles",
+          "docs/fhir-datastore/understanding-uscdi-dataclasses",
+          "docs/fhir-datastore/patient-deduplication",
+          "docs/fhir-datastore/family-relationships"
+        ]
+      },
+      {
+        "group": "Search",
+        "pages": [
+          "docs/search",
+          "docs/search/basic-search",
+          "docs/search/advanced-search-parameters",
+          "docs/search/filter-search-parameter",
+          "docs/search/paginated-search",
+          "docs/search/includes",
+          "docs/search/chained-search"
+        ]
+      },
+      {
+        "group": "Terminology Services",
+        "pages": [
+          "docs/terminology",
+          "docs/terminology/common-terminologies",
+          "docs/terminology/local-codes",
+          "docs/terminology/medplum-terminology-services"
+        ]
+      },
+      {
+        "group": "GraphQL",
+        "pages": [
+          "docs/graphql",
+          "docs/graphql/connections",
+          "docs/graphql/mutations",
+          "docs/graphql/query-limits"
+        ]
+      },
+      {
+        "group": "React Components",
+        "pages": [
+          "docs/react",
+          "docs/react/use-subscription",
+          "docs/react/lifecycle-events",
+          "docs/react/mantine-6x-to-7x",
+          "docs/react/tree-shaking"
+        ]
+      },
+      {
+        "group": "Authentication",
+        "pages": [
+          "docs/auth",
+          "docs/auth/medplum-as-idp",
+          "docs/auth/external-identity-providers",
+          "docs/auth/google-auth",
+          "docs/auth/domain-level-identity-providers",
+          "docs/auth/client-credentials",
+          "docs/auth/on-behalf-of",
+          "docs/auth/logout",
+          "docs/auth/mfa",
+          "docs/auth/token-exchange",
+          "docs/auth/session-management"
+        ]
+      },
+      {
+        "group": "User Management",
+        "pages": [
+          "docs/user-management",
+          "docs/user-management/external-ids",
+          "docs/user-management/custom-emails",
+          "docs/user-management/project-vs-server-scoped-users",
+          "docs/user-management/open-patient-registration"
+        ]
+      },
+      {
+        "group": "Authorization and Access Control",
+        "pages": [
+          "docs/access",
+          "docs/access/projects",
+          "docs/access/access-policies",
+          "docs/access/ip-access-rules",
+          "docs/access/smart-scopes",
+          "docs/access/admin",
+          "docs/access/binary-security-context",
+          "docs/access/multi-tenant-access-policy",
+          "docs/access/user-configuration"
+        ]
+      },
+      {
+        "group": "Medplum App",
+        "pages": [
+          "docs/app",
+          "docs/app/app-introduction",
+          "docs/app/invite",
+          "docs/app/admin-page",
+          "docs/app/apps-tab",
+          "docs/app/sign-in-page"
+        ]
+      },
+      {
+        "group": "AI",
+        "pages": [
+          "docs/ai",
+          "docs/ai/ai-operation",
+          "docs/ai/mcp",
+          "docs/ai/aws"
+        ]
+      },
+      {
+        "group": "Bots",
+        "pages": [
+          "docs/bots",
+          "docs/bots/bot-basics",
+          "docs/bots/unit-testing-bots",
+          "docs/bots/running-bots-locally",
+          "docs/bots/bot-cron-job",
+          "docs/bots/consuming-webhooks",
+          "docs/bots/bot-for-questionnaire-response",
+          "docs/bots/custom-fhir-operations",
+          "docs/bots/file-uploads",
+          "docs/bots/creating-a-pdf",
+          "docs/bots/hl7-into-fhir",
+          "docs/bots/bots-in-production",
+          "docs/bots/running-bots-on-fission",
+          "docs/bots/external-function",
+          "docs/bots/bot-lambda-layer",
+          "docs/bots/bot-secrets",
+          "docs/bots/bot-run-as-user",
+          "docs/bots/monitoring-bots"
+        ]
+      },
+      {
+        "group": "Subscriptions",
+        "pages": [
+          "docs/subscriptions",
+          "docs/subscriptions/publish-and-subscribe",
+          "docs/subscriptions/subscription-extensions"
+        ]
+      },
+      {
+        "group": "CLI",
+        "pages": [
+          "docs/cli",
+          "docs/cli/external-fhir-servers"
+        ]
+      },
+      {
+        "group": "Integration",
+        "pages": [
+          "docs/integration"
+        ]
+      },
+      {
+        "group": "On-Prem Agent",
+        "pages": [
+          "docs/agent",
+          "docs/agent/features",
+          "docs/agent/configuration",
+          "docs/agent/push",
+          "docs/agent/requirements",
+          "docs/agent/access-policy",
+          "docs/agent/agent-cli-commands",
+          "docs/agent/status",
+          "docs/agent/bulk-status",
+          "docs/agent/fetch-logs",
+          "docs/agent/acknowledgement-modes",
+          "docs/agent/troubleshooting",
+          "docs/agent/manual-uninstall"
+        ]
+      },
+      {
+        "group": "HL7 Interface",
+        "pages": [
+          "docs/integration/hl7-interfacing",
+          "docs/integration/hl7-interfacing/adt",
+          "docs/integration/hl7-interfacing/orders-and-results"
+        ]
+      },
+      {
+        "group": "Health Gorilla Lab Orders",
+        "pages": [
+          "docs/integration/health-gorilla",
+          "docs/integration/health-gorilla/sending-orders",
+          "docs/integration/health-gorilla/receiving-results",
+          "docs/integration/health-gorilla/hg-changelog"
+        ]
+      },
+      {
+        "group": "DoseSpot",
+        "pages": [
+          "docs/integration/dosespot",
+          "docs/integration/dosespot/getting-started",
+          "docs/integration/dosespot/clinic-favorite-medications",
+          "docs/integration/dosespot/enroll-user"
+        ]
+      },
+      {
+        "group": "Stedi",
+        "pages": [
+          "docs/integration/stedi",
+          "docs/integration/stedi/eligibility-checks"
+        ]
+      },
+      {
+        "group": "Efax",
+        "pages": [
+          "docs/integration/efax"
+        ]
+      },
+      {
+        "group": "Log Streaming",
+        "pages": [
+          "docs/integration/log-streaming"
+        ]
+      },
+      {
+        "group": "Smart App Launch",
+        "pages": [
+          "docs/integration/smart-app-launch"
+        ]
+      },
+      {
+        "group": "C Cda",
+        "pages": [
+          "docs/integration/c-cda"
+        ]
+      },
+      {
+        "group": "FHIRcast",
+        "pages": [
+          "docs/fhircast",
+          "docs/fhircast/dotnet-client"
+        ]
+      },
+      {
+        "group": "TypeScript SDK",
+        "pages": [
+          "docs/sdk/core.medplumclient",
+          "docs/sdk/core"
+        ]
+      },
+      {
+        "group": "API",
+        "pages": [
+          "docs/api",
+          "docs/api/auth/resetpassword",
+          "docs/api/auth/setpassword",
+          "docs/api/oauth",
+          "docs/api/project-admin/bot",
+          "docs/api/project-admin/client",
+          "docs/api/project-admin/invite",
+          "docs/api/scim/overview",
+          "docs/api/scim/users"
+        ]
+      },
+      {
+        "group": "Analytics",
+        "pages": [
+          "docs/analytics"
+        ]
+      },
+      {
+        "group": "Self-Hosting",
+        "pages": [
+          "docs/self-hosting",
+          "docs/self-hosting/install-on-aws",
+          "docs/self-hosting/aws-cdk-settings",
+          "docs/self-hosting/install-on-gcp",
+          "docs/self-hosting/install-on-azure",
+          "docs/self-hosting/install-on-ubuntu",
+          "docs/self-hosting/install-from-scratch",
+          "docs/self-hosting/running-medplum-docker-container",
+          "docs/self-hosting/running-full-medplum-stack-in-docker",
+          "docs/self-hosting/server-config",
+          "docs/self-hosting/setting-configuration",
+          "docs/self-hosting/project-settings",
+          "docs/self-hosting/setting-up-cors",
+          "docs/self-hosting/super-admin-guide",
+          "docs/self-hosting/sendgrid",
+          "docs/self-hosting/mailtrapio",
+          "docs/self-hosting/branding",
+          "docs/self-hosting/monitoring",
+          "docs/self-hosting/datadog",
+          "docs/self-hosting/opentelemetry",
+          "docs/self-hosting/aws-athena-guide",
+          "docs/self-hosting/considerations",
+          "docs/self-hosting/best-practices",
+          "docs/self-hosting/upgrading-server",
+          "docs/self-hosting/upgrade-rds-database",
+          "docs/self-hosting/disaster-recovery",
+          "docs/self-hosting/load-testing",
+          "docs/self-hosting/presigned-urls"
+        ]
+      },
+      {
+        "group": "Contributing",
+        "pages": [
+          "docs/contributing",
+          "docs/contributing/local-dev-setup",
+          "docs/contributing/run-the-stack",
+          "docs/contributing/testing",
+          "docs/contributing/package-json",
+          "docs/contributing/upgrading-dependencies",
+          "docs/contributing/publishing-npm-packages",
+          "docs/contributing/server-profiling",
+          "docs/contributing/search-architecture",
+          "docs/contributing/terminology-architecture",
+          "docs/contributing/aws-lambda-bots-on-localhost",
+          "docs/contributing/dco"
+        ]
+      },
+      {
+        "group": "Compliance",
+        "pages": [
+          "docs/compliance",
+          "docs/compliance/versions",
+          "docs/compliance/onc",
+          "docs/compliance/clia-cap",
+          "docs/compliance/soc2",
+          "docs/compliance/hipaa",
+          "docs/compliance/hitrust",
+          "docs/compliance/iso9001",
+          "docs/compliance/cfr11",
+          "docs/compliance/gmp",
+          "docs/compliance/hti-4"
+        ]
+      },
+      {
+        "group": "Rate Limits",
+        "pages": [
+          "docs/rate-limits"
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }
