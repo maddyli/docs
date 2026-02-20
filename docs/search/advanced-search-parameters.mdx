@@ -1,0 +1,356 @@
+---
+title: "Advanced Search Parameters"
+description: "The FHIR search framework allows for special search parameters that enable more complex searches to fine-tune your results. In this document, we will go over the following special parameters:"
+---
+
+* [\_id](#_id)
+* [\_lastUpdated](#_lastupdated)
+* [\_summary](#_summary)
+* [\_elements](#_elements)
+* [\_tag](#_tag)
+* [\_compartment](#_compartment)
+* [\_total](#_total)
+* [\_profile](#_profile)
+* [\_security](#_security)
+* [\_source](#_source)
+* [\_filter](#_filter)
+* [\_sort](#_sort)
+* [\_deleted](#_deleted)
+* [\_project](#_project)
+* [\_type](#_type)
+* [\_cursor](#_cursor)
+
+## \_id[​](#_id "Direct link to _id")
+
+The `_id` parameter allows you to search for any resource based on its `id` element. It is also the only way to search using multiple ids in FHIR. To do so, just enter the ids as a comma separated list.
+
+<Accordion title="Example: Searching for patients by _id">
+  * Typescript
+  * CLI
+  * cURL
+
+  ```
+  await medplum.searchResources('Patient', {  _id: 'homer-simpson,marge-simpson,lisa-simpson',});
+  ```
+
+  ```
+  medplum get 'Patient?_id=homer-simpson,marge-simpson,lisa-simpson'
+  ```
+
+  ```
+  curl 'https://api.medplum.com/fhir/R4/Patient?_id=homer-simpson,marge-simpson,lisa-simpson' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+  ```
+</Accordion>
+
+## \_lastUpdated[​](#_lastupdated "Direct link to _lastUpdated")
+
+The `_lastUpdated` parameter allows you to search for resources based on when they were most recently changed.
+
+This is especially useful when combined with [comparison operators](/docs/search/basic-search#searching-by-comparison), such as `gt` (greater than) or `lt` (less than) to find resources that have or have not been changed since a certain time or date.
+
+<Accordion title="Example: Searching for only communications that have occurred since the beginning of October, 2023">
+  * Typescript
+  * CLI
+  * cURL
+
+  ```
+  await medplum.searchResources('Communication', {  _lastUpdated: 'gt2023-10-01',});
+  ```
+
+  ```
+  medplum get 'Communication?_lastUpdated=gt2023-10-01'
+  ```
+
+  ```
+  curl 'https://api.medplum.com/fhir/R4/Communication?&_lastUpdated=gt2023-10-01' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+  ```
+</Accordion>
+
+## \_summary[​](#_summary "Direct link to _summary")
+
+The `_summary` parameter allows you to return only a portion of a resource's elements. Its primary intent is to optimize your queries by fetching only essential information. It is particularly useful when searching for large resources such as those with images or repeating elements.
+
+The `_summary` parameter can contain one of the following value set:
+
+| Value   | Description                                                                                         |
+| ------- | --------------------------------------------------------------------------------------------------- |
+| `true`  | Only returns elements that are marked as `summary` in the resource definition.                      |
+| `count` | Returns the count of matching resources, but none of the actual resource details for those matches. |
+
+<Accordion title="Example: Searching for a summary of a patient">
+  * Typescript
+  * CLI
+  * cURL
+
+  ```
+  await medplum.searchResources('Patient', {  _id: 'homer-simpson',  _summary: true,});/*Example response:{  resourceType: 'Patient',  identifier: [    {      use: 'official',      system: 'https://example-hospital.org',      value: 'patient-1',    },  ],  active: true,  name: [    {      family: 'Simpson',      given: ['Homer', 'Jay'],    },  ],  gender: 'male',  birthDate: '1956-05-12',  deceasedBoolean: false,  address: [    {      use: 'home',      type: 'physical',      line: ['742 Evergreen Terrace'],      city: 'Springfield',    },  ],  managingOrganization: {    reference: 'Organization/example-hospital',  },  link: [    {      type: 'refer',    },  ],};*/
+  ```
+
+  ```
+  medplum get 'Patient?_id=homer-simpson&_summary=true'Example response:{  resourceType: 'Patient',  identifier: [    {      use: 'official',      system: 'https://example-hospital.org',      value: 'patient-1',    },  ],  active: true,  name: [    {      family: 'Simpson',      given: ['Homer', 'Jay'],    },  ],  gender: 'male',  birthDate: '1956-05-12',  deceasedBoolean: false,  address: [    {      use: 'home',      type: 'physical',      line: ['742 Evergreen Terrace'],      city: 'Springfield',    },  ],  managingOrganization: {    reference: 'Organization/example-hospital',  },  link: [    {      type: 'refer',    },  ],};
+  ```
+
+  ```
+  curl 'https://api.medplum.com/fhir/R4/Patient?_id=homer-simpson&_summary=true' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \Example response:{  resourceType: 'Patient',  identifier: [    {      use: 'official',      system: 'https://example-hospital.org',      value: 'patient-1',    },  ],  active: true,  name: [    {      family: 'Simpson',      given: ['Homer', 'Jay'],    },  ],  gender: 'male',  birthDate: '1956-05-12',  deceasedBoolean: false,  address: [    {      use: 'home',      type: 'physical',      line: ['742 Evergreen Terrace'],      city: 'Springfield',    },  ],  managingOrganization: {    reference: 'Organization/example-hospital',  },  link: [    {      type: 'refer',    },  ],};
+  ```
+</Accordion>
+
+## \_elements[​](#_elements "Direct link to _elements")
+
+The `_elements` parameter is similar to `_summary` in that it allows you to return only a subset of the resource's elements. However, rather than a predefined value set, `_elements` allows you to choose which fields you would like to return.
+
+The fields you choose should be formatted as a comma separated list of base elements for a given resource.
+
+Note that any top-level mandatory or modifier elements should always be included in the chosen list of elements.
+
+<Accordion title="Example: Searching the subject and performers of observations">
+  * Typescript
+  * CLI
+  * cURL
+
+  ```
+  await medplum.searchResources('Observation', {  _elements: 'status,code,subject,performer',});/*Example Response:[  {    resourceType: 'Observation',    status: 'final',    code: {      coding: [        {          system: 'http://loinc.org',          code: '8867-4',          display: 'Heart Rate',        },      ],    },    subject: {      reference: 'Patient/homer-simpson',    },    performer: [      {        reference: 'Practitioner/dr-alice-smith',      },    ],  },  {    resourceType: 'Observation',    status: 'preliminary',    code: {      coding: [        {          system: 'http://loinc.org',          code: '8310-5',          display: 'Body temperature',        },      ],    },    subject: {      reference: 'Patient/marge-simpson',    },    performer: [      {        reference: 'Practitioner/dr-gregory-house',      },    ],  },];*/
+  ```
+
+  ```
+  medplum get 'Observation?_elements=status,code,subject,performer'Example Response:[  {    resourceType: 'Observation',    status: 'final',    code: {      coding: [        {          system: 'http://loinc.org',          code: '8867-4',          display: 'Heart Rate',        },      ],    },    subject: {      reference: 'Patient/homer-simpson',    },    performer: [      {        reference: 'Practitioner/dr-alice-smith',      },    ],  },  {    resourceType: 'Observation',    status: 'preliminary',    code: {      coding: [        {          system: 'http://loinc.org',          code: '8310-5',          display: 'Body temperature',        },      ],    },    subject: {      reference: 'Patient/marge-simpson',    },    performer: [      {        reference: 'Practitioner/dr-gregory-house',      },    ],  },];
+  ```
+
+  ```
+  curl 'https://api.medplum.com/fhir/R4/Observations?_elements=status,code,subject,performer' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \Example Response:[  {    resourceType: 'Observation',    status: 'final',    code: {      coding: [        {          system: 'http://loinc.org',          code: '8867-4',          display: 'Heart Rate',        },      ],    },    subject: {      reference: 'Patient/homer-simpson',    },    performer: [      {        reference: 'Practitioner/dr-alice-smith',      },    ],  },  {    resourceType: 'Observation',    status: 'preliminary',    code: {      coding: [        {          system: 'http://loinc.org',          code: '8310-5',          display: 'Body temperature',        },      ],    },    subject: {      reference: 'Patient/marge-simpson',    },    performer: [      {        reference: 'Practitioner/dr-gregory-house',      },    ],  },];
+  ```
+</Accordion>
+
+## \_tag[​](#_tag "Direct link to _tag")
+
+The `_tag` parameter allows you to search on the `tag` field of the `meta` element of the resource you are searching for. The `tag` field contains user-defined tags to categorize the resource.
+
+<Accordion title="Example: Searching for observations that are tagged as critical">
+  * Typescript
+  * CLI
+  * cURL
+
+  ```
+  await medplum.searchResources('Observation', {  _tag: 'https://example.org/tags|critical',});
+  ```
+
+  ```
+  medplum get 'Observation?_tag=https://example.org/tags|critical'
+  ```
+
+  ```
+  curl 'https://api.medplum.com/fhir/R4/Observation?_tag=https://example.org/tags|critical' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+  ```
+</Accordion>
+
+## \_compartment[​](#_compartment "Direct link to _compartment")
+
+A compartment is a grouping of resources which share a common relation. For example, each `Patient` resource has its own compartment. A `Patient` compartment includes any resources which reference that `Patient`, usually in the `subject` field.
+
+Medplum allows you to easily search using compartments by providing the non-standard `_compartment` parameter. This enables you to find all resources of a given type that are associated with a certain compartment.
+
+<Accordion title="Example: Find all communications for a patient">
+  * Typescript
+  * CLI
+  * cURL
+
+  ```
+  await medplum.searchResources('Communication', {  _compartment: 'Patient/homer-simpson',});
+  ```
+
+  ```
+  medplum get 'Communication?_compartment=Patient/homer-simpson'
+  ```
+
+  ```
+  curl 'https://api.medplum.com/fhir/R4/Communication?_compartment=Patient/homer-simpson' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+  ```
+</Accordion>
+
+## \_total[​](#_total "Direct link to _total")
+
+The `_total` parameter allows you to return the total count of matching resources in your search response. For more details see the [Paginated Search docs.](/docs/search/paginated-search#getting-the-total-number-of-results-with-_total)
+
+<Warning>
+  The `_total=accurate` search parameter will only attempt to return the accurate count if the estimated total is under 1 million.
+</Warning>
+
+<Accordion title="Example: Search for all patients in your organization and get an estimate of the total number">
+  * Typescript
+  * CLI
+  * cURL
+
+  ```
+  await medplum.search('Patient', {  _total: 'estimate',});
+  ```
+
+  ```
+  medplum get 'Patient?_total=estimate'
+  ```
+
+  ```
+  curl 'https://api.medplum.com/fhir/R4/Patient?_total=estimate' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+  ```
+</Accordion>
+
+## \_profile[​](#_profile "Direct link to _profile")
+
+FHIR allows [profiling](http://hl7.org/fhir/R4/profiling.html) to create custom data structures that specify how resources can be sub-specialized to meet specific use cases. The `_profile` parameter allows you to search based on these profiles.
+
+The `_profile` parameter is a reference parameter, meaning you may provide a reference as an argument to the parameter. See the [FHIR Profiles doc](/docs/fhir-datastore/profiles) to learn more about profiling.
+
+<Accordion title="Example: Search for observations that are part of the pediatric growth charts profile">
+  * Typescript
+  * CLI
+  * cURL
+
+  ```
+  await medplum.searchResources('Observation', {  _profile: 'https://example.org/StructureDefinition/pediatric-growth-chart',});
+  ```
+
+  ```
+  medplum get 'Observation?_profile=https://example.org/StructureDefinition/pediatric-growth-chart'
+  ```
+
+  ```
+  curl 'https://api.medplum.com/fhir/R4/Observation?_profile=https://example.org/StructureDefinition/pediatric-growth-chart' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+  ```
+</Accordion>
+
+## \_security[​](#_security "Direct link to _security")
+
+The `_security` parameter allows you to search on the `security` field of the `meta` element of the resource you are searching for.
+
+The [Confidentiality Level Code System](http://terminology.hl7.org/CodeSystem/v3-Confidentiality) is a standard code system for confidentiality levels.
+
+<Accordion title="Example: Searching for patients that are of a  confidentiality level.">
+  **normal**
+
+  * Typescript
+  * CLI
+  * cURL
+
+  ```
+  await medplum.searchResources('Patient', {  _security: 'http://terminology.hl7.org/CodeSystem/v3-Confidentiality|N',});
+  ```
+
+  ```
+  medplum get 'Patient?_security=http://terminology.hl7.org/CodeSystem/v3-Confidentiality|N'
+  ```
+
+  ```
+  curl 'https://api.medplum.com/fhir/R4/Patient?_security=http://terminology.hl7.org/CodeSystem/v3-Confidentiality|N' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+  ```
+</Accordion>
+
+## \_source[​](#_source "Direct link to _source")
+
+The `_source` parameter allows you to search on the `source` field of the `meta` element of the resource you are searching for.
+
+The `meta.source` field indicates the system or application that originally created or supplied the resource, which can be useful for filtering or tracking resources based on their origin.
+
+<Accordion title="Example: Searching for Patients sourced from">
+  `https://foomedical.com`
+
+  * Typescript
+  * CLI
+  * cURL
+
+  ```
+  await medplum.searchResources('Patient', {  _source: 'https://foomedical.com',});
+  ```
+
+  ```
+  medplum get 'Patient?_source=https://foomedical.com'
+  ```
+
+  ```
+  curl 'https://api.medplum.com/fhir/R4/Patient?_source=https://foomedical.com' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+  ```
+</Accordion>
+
+## \_filter[​](#_filter "Direct link to _filter")
+
+The `_filter` parameter can be used to filter for more complex queries. For more details see the [\_filter Search Parameter docs](/docs/search/filter-search-parameter).
+
+## \_sort[​](#_sort "Direct link to _sort")
+
+The `_sort` parameter allows you to sort the results of your search based on different parameters. For details on how to use the `_sort` parameter, see the [Sorting the Results docs](/docs/search/basic-search#sorting-the-results).
+
+## \_deleted[​](#_deleted "Direct link to _deleted")
+
+The `_deleted` parameter allows you to search for resources that have been soft-deleted. By default, Medplum filters out deleted resources.
+
+<Warning>
+  Mixing `_deleted` with most other search parameters will not work as expected. This is because the database columns backing other search parameters are not populated for deleted resources.
+</Warning>
+
+<Accordion title="Example: Searching for deleted patients">
+  * Typescript
+  * CLI
+  * cURL
+
+  ```
+  await medplum.searchResources('Patient', {  _deleted: true,});
+  ```
+
+  ```
+  medplum get 'Patient?_deleted=true'
+  ```
+
+  ```
+  curl 'https://api.medplum.com/fhir/R4/Patient?_deleted=true' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+  ```
+</Accordion>
+
+## \_project[​](#_project "Direct link to _project")
+
+The `_project` parameter allows you to filter resources by their project ID. This is useful when logged in as [Super Admin](/docs/self-hosting/super-admin-guide) or working with linked projects to ensure data isolation.
+
+<Accordion title="Example: Searching for patients in a specific project">
+  * Typescript
+  * CLI
+  * cURL
+
+  ```
+  await medplum.searchResources('Patient', {  _project: '85283598-1859-408c-8c4c-a2c093d2d38c',});
+  ```
+
+  ```
+  medplum get 'Patient?_project=85283598-1859-408c-8c4c-a2c093d2d38c'
+  ```
+
+  ```
+  curl 'https://api.medplum.com/fhir/R4/Patient?_project=85283598-1859-408c-8c4c-a2c093d2d38c' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+  ```
+</Accordion>
+
+## \_type[​](#_type "Direct link to _type")
+
+The `_type` parameter allows you to restrict the search to specific resource types. This is particularly useful when performing a system-wide search or when searching across multiple resource types.
+
+<Accordion title="Example: Searching for Patients and Observations">
+  * Typescript
+  * CLI
+  * cURL
+
+  ```
+  await medplum.get('fhir/R4?_type=Patient,Observation&name=Smith');
+  ```
+
+  ```
+  medplum get 'fhir/R4?_type=Patient,Observation&name=Smith'
+  ```
+
+  ```
+  curl 'https://api.medplum.com/fhir/R4?_type=Patient,Observation&name=Smith' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+  ```
+</Accordion>
+
+## \_cursor[​](#_cursor "Direct link to _cursor")
+
+The `_cursor` parameter is used for [cursor-based pagination](/docs/search/paginated-search#cursor-based-pagination). It is generally not constructed manually but is returned in the `link` section of a bundle response for the next page of results. Using `_cursor` is more efficient than `_offset` for deep pagination.
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/search/advanced-search-parameters.mdx)
+
+Last updated on **Feb 20, 2026**

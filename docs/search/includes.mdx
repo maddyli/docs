@@ -1,0 +1,211 @@
+---
+title: "Including Linked Resources"
+description: "In many cases, your application may need to search for not just one resource type, but also some of the related resources that those resources reference. For example, one might need to search for  resources with a certain code, but also the  resources on whom the observations were made, and the  for the  resources as well. Using basic search requests, this would require many different API calls. The FHIR specification contains special  and  search parameters, which return resources linked to the results of your search alongside in the same Bundle."
+---
+
+## Comparison with GraphQL[​](#comparison-with-graphql "Direct link to Comparison with GraphQL")
+
+In addition to these search parameters, Medplum also offers a [FHIR GraphQL API](/docs/graphql) that is suitable for retrieving linked resources when you only need to traverse a few hops in the resource graph and know the exact fields on each resource that you need. The major differences between the `_(rev)include` parameters and GraphQL are summarized below:
+
+| `_(rev)include`                                           | GraphQL                                                         |
+| --------------------------------------------------------- | --------------------------------------------------------------- |
+| Returns full resource JSON                                | Returns only specified resource fields                          |
+| Traverses resource references via search parameters       | Traverses references through special `Reference.resource` field |
+| Can traverse up from a resource to one that references it | Can only traverse down from a resource to one it references     |
+
+## \_include and \_revinclude[​](#_include-and-_revinclude "Direct link to _include and _revinclude")
+
+For example, the search query described above for `Observation`, `Patient`, and `Provenance` resources would look like this:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```
+    await medplum.searchResources('Observation', {  code: '78012-2',  _include: 'Observation:patient',  _revinclude: 'Provenance:target',});
+    ```
+  </Tab>
+
+  <Tab title="CLI">
+    ```
+    medplum get 'Observation?code=78012-2&_include=Observation:patient&_revinclude=Provenance:target'
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```
+    curl 'https://api.medplum.com/fhir/R4/Observation?code=78012-2&_include=Observation:patient&_revinclude=Provenance:target' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+    ```
+  </Tab>
+</Tabs>
+
+<Accordion title="Example response">
+  ```
+  [  {    resourceType: 'Observation',    id: '1',    meta: { versionId: 'b267aa05-e134-4f01-817a-5d255a691880', lastUpdated: '2022-12-21T01:55:34.799Z' },    status: 'final',    code: {      coding: [{ system: LOINC, code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],    },    valueCodeableConcept: {      coding: [{ code: '260385009', display: 'Negative', system: SNOMED }],    },    subject: { reference: 'Patient/1', display: 'Homer Simpson III' },    effectiveDateTime: '2022-11-01T19:33:00.000Z',  },  {    resourceType: 'Patient',    id: '1',    meta: {      versionId: '98a92482-bc3b-4f09-b7ce-08fea48fa135',      lastUpdated: '2023-03-22T03:05:21.361Z',    },    name: [{ given: ['Homer'], family: 'Simpson', suffix: ['III'] }],    gender: 'male',    birthDate: '1956-05-12',  },  {    resourceType: 'Provenance',    id: '1',    recorded: '2022-12-21T01:55:34.799Z',    target: [{ reference: 'Observation/1' }],    agent: [{ who: { reference: 'Practitioner/49d111f2-ae37-47bb-b8ee-2281d024501f' } }],  },  {    resourceType: 'Observation',    id: '2',    meta: { versionId: '7777208f-426f-41b1-ab4b-0eb6d3833f09', lastUpdated: '2023-05-01T00:00:00.000Z' },    status: 'final',    code: {      coding: [{ system: LOINC, code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],    },    valueCodeableConcept: {      coding: [{ code: '10828004', display: 'Positive', system: SNOMED }],    },    subject: { reference: 'Patient/1', display: 'Homer Simpson III' },    effectiveDateTime: '2023-02-04T11:45:00.000Z',  },  {    resourceType: 'Provenance',    id: '2',    recorded: '2022-12-21T01:55:34.799Z',    target: [{ reference: 'Observation/2' }],    agent: [{ who: { reference: 'Practitioner/49d111f2-ae37-47bb-b8ee-2281d024501f' } }],  },  {    resourceType: 'Observation',    id: '3',    status: 'final',    code: {      coding: [{ system: LOINC, code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],    },    valueCodeableConcept: {      coding: [{ code: '260385009', display: 'Negative', system: SNOMED }],    },    subject: { reference: 'Patient/2', display: 'Lisa Simpson' },    effectiveDateTime: '2022-06-12T16:03:00.000Z',    meta: { versionId: 'd4c4e4c7-a867-4b90-afd6-1c2bb84158de', lastUpdated: '2022-12-21T01:55:34.799Z' },  },  {    resourceType: 'Patient',    id: '2',    meta: {      versionId: '98a92482-bc3b-4f09-b7ce-08fea48fa135',      lastUpdated: '2023-03-22T03:05:21.361Z',    },    name: [{ given: ['Lisa'], family: 'Simpson' }],    gender: 'female',    birthDate: '2015-08-13',  },  {    resourceType: 'Provenance',    id: '3',    recorded: '2022-12-21T01:55:34.799Z',    target: [{ reference: 'Observation/3' }],    agent: [{ who: { reference: 'Practitioner/49d111f2-ae37-47bb-b8ee-2281d024501f' } }],  },];
+  ```
+</Accordion>
+
+<Warning>
+  The values of the `_include` and `_revinclude` parameters are not paths into the resource, but search parameters.
+</Warning>
+
+The `_include=Observation:patient` parameter adds to the search results all `Patient` resources referenced by the `Observation.subject` field of any of the original search results. Similarly, the `_revinclude` parameter adds any `Provenance` resources whose `target` field references one of the original search results. The full graph of resources returned in the search result [`Bundle`](/docs/api/fhir/resources/bundle) could look something like this:
+
+## `:iterate` Modifier[​](#iterate-modifier "Direct link to iterate-modifier")
+
+By default, the `_include` and `_revinclude` only include resources one hop away from resources in the search results. In order to traverse subsequent reference links, add the `:iterate` modifier to the `_include` or `_revinclude` parameter. This will cause the inclusion to apply recursively, until no more resources are found. For example, to search for `Observation` resources, plus the `Patient` resources they refer to, plus those patients' associated `Practitioner`, you might use a search API call like this:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```
+    await medplum.searchResources('Observation', {  code: '78012-2',  _include: 'Observation:patient',  '_include:iterate': 'Patient:general-practitioner',});
+    ```
+  </Tab>
+
+  <Tab title="CLI">
+    ```
+    medplum get 'Observation?code=78012-2&_include=Observation:patient&_include:iterate=Patient:general-practitioner'
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```
+    curl 'https://api.medplum.com/fhir/R4/Observation?code=78012-2&_include=Observation:patient&_include:iterate=Patient:general-practitioner' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+    ```
+  </Tab>
+</Tabs>
+
+<Accordion title="Example response">
+  ```
+  [  {    resourceType: 'Observation',    id: '1',    meta: { versionId: 'b267aa05-e134-4f01-817a-5d255a691880', lastUpdated: '2022-12-21T01:55:34.799Z' },    status: 'final',    code: {      coding: [{ system: LOINC, code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],    },    valueCodeableConcept: {      coding: [{ code: '260385009', display: 'Negative', system: SNOMED }],    },    subject: { reference: 'Patient/1', display: 'Homer Simpson III' },    effectiveDateTime: '2022-11-01T19:33:00.000Z',  },  {    resourceType: 'Patient',    id: '1',    meta: { versionId: '98a92482-bc3b-4f09-b7ce-08fea48fa135', lastUpdated: '2023-03-22T03:05:21.361Z' },    name: [{ given: ['Homer'], family: 'Simpson', suffix: ['III'] }],    gender: 'male',    birthDate: '1956-05-12',    generalPractitioner: [{ reference: 'Practitioner/1' }],  },  {    resourceType: 'Practitioner',    id: '1',    name: [{ prefix: ['Dr.'], given: ['Julius', 'Michael'], family: 'Hibbert', suffix: ['M.D.'] }],    identifier: [{ system: 'http://hl7.org/fhir/sid/us-npi', value: '3141592654' }],  },  {    resourceType: 'Observation',    id: '2',    meta: { versionId: '7777208f-426f-41b1-ab4b-0eb6d3833f09', lastUpdated: '2023-05-01T00:00:00.000Z' },    status: 'final',    code: {      coding: [{ system: LOINC, code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],    },    valueCodeableConcept: {      coding: [{ code: '10828004', display: 'Positive', system: SNOMED }],    },    subject: { reference: 'Patient/1', display: 'Homer Simpson III' },    effectiveDateTime: '2023-02-04T11:45:00.000Z',  },  {    resourceType: 'Observation',    id: '3',    status: 'final',    code: {      coding: [{ system: LOINC, code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],    },    valueCodeableConcept: {      coding: [{ code: '260385009', display: 'Negative', system: SNOMED }],    },    subject: { reference: 'Patient/2', display: 'Lisa Simpson' },    effectiveDateTime: '2022-06-12T16:03:00.000Z',    meta: { versionId: 'd4c4e4c7-a867-4b90-afd6-1c2bb84158de', lastUpdated: '2022-12-21T01:55:34.799Z' },  },  {    resourceType: 'Patient',    id: '2',    meta: {      versionId: '98a92482-bc3b-4f09-b7ce-08fea48fa135',      lastUpdated: '2023-03-22T03:05:21.361Z',    },    name: [{ given: ['Lisa'], family: 'Simpson' }],    gender: 'female',    birthDate: '2015-08-13',    generalPractitioner: [{ reference: 'Practitioner/1' }],  },];
+  ```
+</Accordion>
+
+This query would return a Bundle containing all the resources from a linked graph like the following:
+
+<Check>
+  The `:iterate` modifier applies recursively, and can return multiple levels of results. For example, all results in the graph shown below would be returned in the results for the following search API request:
+
+  ```
+  GET /fhir/R4/Patient?_id=1&_include:iterate=Patient:link
+  ```
+</Check>
+
+## Additional Examples[​](#additional-examples "Direct link to Additional Examples")
+
+### Searching for a related person[​](#searching-for-a-related-person "Direct link to Searching for a related person")
+
+In some cases you may want to search for a [`Patient`](/docs/api/fhir/resources/patient) as well as any [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) resources they may have. This is often used in pediatric care when you need to retrieve a [`Patient`](/docs/api/fhir/resources/patient) and their parent in the same search. See the [family relationships guide](/docs/fhir-datastore/family-relationships) for more details.
+
+<Accordion title="Example: Get a  and their">
+  `Patient``RelatedPerson`
+
+  * TypeScript
+  * CLI
+  * cURL
+
+  ```
+  await medplum.searchResources('Patient', {  _id: 'lisa-simpson',  _revinclude: 'RelatedPerson:patient',});
+  ```
+
+  ```
+  medplum get 'Patient?_id=lisa-simpson&_revinclude=RelatedPerson:patient'
+  ```
+
+  ```
+  curl 'https://api.medplum.com/fhir/R4/Patient?_id=lisa-simpson&_revinclude=RelatedPerson:patient' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+  ```
+</Accordion>
+
+In this example we:
+
+* Search for a root [`Patient`](/docs/api/fhir/resources/patient) resource
+* We then use `_revinclude=RelatedPerson:patient` to include any [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) resources that reference one of the patients in our results.
+
+However, some models use the [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) as a link between two patients (for more details see [approach #3 of Family Relationships guide](/docs/fhir-datastore/family-relationships#approach-3)).
+
+<Accordion title="Example: Get a  and their  modeled as a">
+  `Patient``RelatedPerson``Patient`
+
+  * TypeScript
+  * CLI
+  * cURL
+
+  ```
+  await medplum.searchResources('Patient', {  _id: 'lisa-simpson',  _revinclude: 'RelatedPerson:patient',  '_revinclude:iterate': 'Patient:link',});
+  ```
+
+  ```
+  medplum get 'Patient?_id=lisa-simpson&_revinclude=RelatedPerson:patient&_revinclude:iterate=Patient:link'
+  ```
+
+  ```
+  curl 'https://api.medplum.com/fhir/R4/Patient?_id=lisa-simpson&_revinclude=RelatedPerson:patient&_revinclude:iterate=Patient:link' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+  ```
+</Accordion>
+
+This example is similar to the first, but includes an additional step.
+
+* We search for the root [`Patient`](/docs/api/fhir/resources/patient) resource
+* We use `_revinclude=RelatedPerson:patient` to again get any [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) resources that reference our results. In this case they are only representing a link between the two [`Patient`](/docs/api/fhir/resources/patient) resources.
+* We then use `_revinclude:iterate=Patient:link` to iterate on the [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) resources and get any [`Patient`](/docs/api/fhir/resources/patient) resources that reference them on the `link` element. In this scenario, these are the parents.
+
+### Searching for practitioners at a specific location[​](#searching-for-practitioners-at-a-specific-location "Direct link to Searching for practitioners at a specific location")
+
+A common use case is searching for any [`Practitioner`](/docs/api/fhir/resources/practitioner) and [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole) resources at a specific location. This can be necessary when the same physician provides care at multiple locations. See the [provider organizations guide](/docs/administration/provider-directory/provider-organizations) for more details.
+
+<Accordion title="Example: Find all practitioners and roles at a specific location">
+  * TypeScript
+  * CLI
+  * cURL
+
+  ```
+  await medplum.searchResources('Location', {  _id: 'example-location',  _revinclude: 'PractitionerRole:location',  '_include:iterate': 'PractitionerRole:practitioner',});
+  ```
+
+  ```
+  medplum get ‘Location?_id=example-location&_revinclude=PractitionerRole:location&_include:iterate=PractitionerRole:practitioner’
+  ```
+
+  ```
+  curl 'https://api.medplum.com/fhir/R4/Location?_id=example-location&_revinclude=PractitionerRole:location&_include:iterate=PractitionerRole:practitioner' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+  ```
+</Accordion>
+
+In this example, we:
+
+* Search for a root [`Location`](/docs/api/fhir/resources/location) resource.
+* We then use `_revinclude=PractitionerRole:location` to get all [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole) resources that reference the [`Location`](/docs/api/fhir/resources/location) using the `location` search parameter.
+* Next, we iterate on the [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole) resources using `_include:iterate=PractitionerRole:practitioner`. This will include all the [`Practitioner`](/docs/api/fhir/resources/practitioner) resources referenced by the `practitioner` search parameter of the returned [`PractitionerRoles`](/docs/api/fhir/resources/practitionerrole).
+
+### Searching for a patient's care team[​](#searching-for-a-patients-care-team "Direct link to Searching for a patient's care team")
+
+You may want to display a [`Patient`](/docs/api/fhir/resources/patient) resource as well as a list of all the members of their [`CareTeam`](/docs/api/fhir/resources/careteam) on one page.
+
+<Accordion title="Example: Search for all members of the  of a">
+  `CareTeam``Patient`
+
+  * TypeScript
+  * CLI
+  * cURL
+
+  ```
+  await medplum.searchResources('Patient', {  _id: 'homer-simpson',  _revinclude: 'CareTeam:patient',  '_include:iterate': 'CareTeam:participant',});
+  ```
+
+  ```
+  medplum get 'Patient?_id=homer-simpson&_revinclude=CareTeam:patient&_include:iterate=CareTeam:participant'
+  ```
+
+  ```
+  curl 'https://api.medplum.com/fhir/R4/Patient?_id=homer-simpson&_revinclude=CareTeam:patient&_include:iterate=CareTeam:participant' \	-H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+  ```
+</Accordion>
+
+In this example we:
+
+* Search for a root [`Patient`](/docs/api/fhir/resources/patient) resource.
+* Then we use `_revinclude=CareTeam:patient` to search for a [`CareTeam`](/docs/api/fhir/resources/careteam) resource that references our results using the `patient` search parameter.
+* We then iterate on the [`CareTeam`](/docs/api/fhir/resources/careteam) with `_include:iterate=CareTeam:participant` to search for all members of the team.
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/search/includes.mdx)
+
+Last updated on **Feb 20, 2026**

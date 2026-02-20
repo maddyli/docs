@@ -1,0 +1,190 @@
+---
+title: "Using  to Manage Clinical Workflow"
+description: "Workflow management is an essential part of healthcare, and healthcare operations requiring coordination of many manual steps physicians, patients, nurses, care coordinators, etc. Generally, our goals are to"
+---
+
+* **Top-of-License Care:** Ensure clinicians' time is being used efficiently.
+* **Compliant Fifty-State Workflow:** Make sure we can serve patients across a wide geographic area robustly and efficiently
+* **Automation:** Eliminate routine tasks to avoid clinician burnout. See our [Bots documentation](/docs/bots) for more on automating workflows.
+
+The Medplum [Clinical Task Management Demo](https://github.com/medplum/medplum-task-demo) provides an in-depth reference implementation of a task management system that addresses these concerns.
+
+[YouTube video player](https://www.youtube.com/embed/xQH27B8sP9o?start=0)
+
+## Introduction[​](#introduction "Direct link to Introduction")
+
+While the majority of FHIR resources represent clinical data that is *operated on*, FHIR also defines a set of workflow resources that describe and track *work to be done.* This guide will discuss the usage of the [`Task`](/docs/api/fhir/resources/task) resource, which is the basic building-block resource used to implement care plans and track workflow progress.
+
+For example, a [`Task`](/docs/api/fhir/resources/task) might represent the task of having a practitioner complete a [PHQ-9 questionnaire](https://www.apa.org/depression-guideline/patient-health-questionnaire.pdf) for a patient as part of their onboarding.
+
+A common application is for organizations to build **task queue systems** to route tasks to the correct practitioner based on specialty, level of credential, and availability. The [Medplum Task Demo](https://github.com/medplum/medplum-task-demo) application provides a minimalist task queue that demonstrates task search, assignment, and status. For real-time task updates, consider using [Subscriptions](/docs/subscriptions).
+
+## Task type[​](#task-type "Direct link to Task type")
+
+The `Task.code` element is used to represent the task type, equivalent to the task title. This can either be different from task to task, or selected from a standard set of task types. Using the latter approach helps enable querying across all `Tasks` of the same type.
+
+While using SNOMED or LOINC codes are preferred, many implementations simply use the `Task.code.text` element, as task types are often implementation-specific.
+
+`Task.description` can be used to add additional descriptive text to the specific [`Task`](/docs/api/fhir/resources/task) instance.
+
+\*\*Example: \*\*
+
+```
+{  resourceType: 'Task',  id: 'example-task',  code: {    text: 'Complete PHQ-9',    coding: [{      code: '715252007',      system: 'http://snomed.info/sct'    }]  },  description: "Patient to complete PHQ-9 depression screening",  //...}
+```
+
+## Task status[​](#task-status "Direct link to Task status")
+
+Designing status codes for tasks varies from implementation to implementation, and requires a good understanding of your operations.
+
+[`Task`](/docs/api/fhir/resources/task) provides three fields: `status`, `businessStatus`, and `statusReason`.
+
+`Task.status` maps to the FHIR task lifecycle shown below. It provides coarse-grained information about the activity state of a [`Task`](/docs/api/fhir/resources/task) and is most useful for day-to-day operations, as it allows for efficient queries on active, completed, and cancelled tasks. These queries will remain stable as your implementation scales. (**Note**: in the diagram below, the codes `requested`, `received`, `accepted`, and `rejected` only apply when `Tasks` are shared between systems. Most implementations will just use `ready` to indicate a `Task` can be actioned.)
+
+![Task lifecyle](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHZpZXdCb3g9IjAgMCA2MTAgNjEwIj4KICA8ZGVmcz4KICAgIDxwYXRoIGlkPSJyZXVzZS0wIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgZD0ibTE2MS4xMiA1ODEgNy0zLjUtMS43NSAzLjUgMS43NSAzLjV6IiBwb2ludGVyLWV2ZW50cz0ibm9uZSIvPgogICAgPHBhdGggaWQ9InJldXNlLTEiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLW1pdGVybGltaXQ9IjEwIiBkPSJtMTQ1IDU2NC44OC0zLjUtNyAzLjUgMS43NSAzLjUtMS43NXoiIHBvaW50ZXItZXZlbnRzPSJub25lIi8+CiAgPC9kZWZzPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKC41IC41KSI+CiAgICA8cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgZD0iTTQ1MSAxODZoMjAtOSAxMy42MyIgcG9pbnRlci1ldmVudHM9Im5vbmUiLz4KICAgIDxwYXRoIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLW1pdGVybGltaXQ9IjEwIiBkPSJtNDgwLjg4IDE4Ni03IDMuNSAxLjc1LTMuNS0xLjc1LTMuNXoiIHBvaW50ZXItZXZlbnRzPSJub25lIi8+CiAgICA8cGF0aCBmaWxsPSIjZmZmIiBzdHJva2U9IiMwMDAiIGQ9Ik0xIDk2aDQ1MHYxODBIMXoiIHBvaW50ZXItZXZlbnRzPSJub25lIi8+CiAgICA8cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgZD0iTTMzIDMxaDUxLjYzIiBwb2ludGVyLWV2ZW50cz0ibm9uZSIvPgogICAgPHBhdGggc3Ryb2tlPSIjMDAwIiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIGQ9Im04OS44OCAzMS03IDMuNSAxLjc1LTMuNS0xLjc1LTMuNXoiIHBvaW50ZXItZXZlbnRzPSJub25lIi8+CiAgICA8Y2lyY2xlIGN4PSIxOCIgY3k9IjMxIiByPSIxNSIgcG9pbnRlci1ldmVudHM9Im5vbmUiLz4KICAgIDxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLW1pdGVybGltaXQ9IjEwIiBkPSJNMjExIDMzMWgxMDEuNjMiIHBvaW50ZXItZXZlbnRzPSJub25lIi8+CiAgICA8cGF0aCBzdHJva2U9IiMwMDAiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgZD0ibTMxNy44OCAzMzEtNyAzLjUgMS43NS0zLjUtMS43NS0zLjV6IiBwb2ludGVyLWV2ZW50cz0ibm9uZSIvPgogICAgPHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIGQ9Ik0xMjEgMzc2djMwSDcxdjIzLjYzIiBwb2ludGVyLWV2ZW50cz0ibm9uZSIvPgogICAgPHBhdGggc3Ryb2tlPSIjMDAwIiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIGQ9Im03MSA0MzQuODgtMy41LTcgMy41IDEuNzUgMy41LTEuNzV6IiBwb2ludGVyLWV2ZW50cz0ibm9uZSIvPgogICAgPHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIGQ9Ik0xODEgMzc2djMwaDQwdjIzLjYzIiBwb2ludGVyLWV2ZW50cz0ibm9uZSIvPgogICAgPHBhdGggc3Ryb2tlPSIjMDAwIiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIGQ9Im0yMjEgNDM0Ljg4LTMuNS03IDMuNSAxLjc1IDMuNS0xLjc1eiIgcG9pbnRlci1ldmVudHM9Im5vbmUiLz4KICAgIDxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iNjAiIHg9IjkxIiB5PSIzMTYuMiIgZmlsbD0iI2RhZThmYyIgc3Ryb2tlPSIjNmM4ZWJmIiBwb2ludGVyLWV2ZW50cz0ibm9uZSIgcng9IjkiIHJ5PSI5Ii8+CiAgICA8dGV4dCB4PSIzMCIgeT0iMTIiIGZvbnQtZmFtaWx5PSJIZWx2ZXRpY2EiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDEyMC41IDMzOS41KSI+aW4tcHJvZ3Jlc3M8L3RleHQ+CiAgICA8cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgZD0iTTU0MiAyMTZ2MzY1SDE2Ni4zNyIgcG9pbnRlci1ldmVudHM9Im5vbmUiLz4KICAgIDx1c2UgeGxpbms6aHJlZj0iI3JldXNlLTAiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgcG9pbnRlci1ldmVudHM9Im5vbmUiLz4KICAgIDxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iNjAiIHg9IjQ4MiIgeT0iMTU2IiBmaWxsPSIjZjhjZWNjIiBzdHJva2U9IiNiODU0NTAiIHBvaW50ZXItZXZlbnRzPSJub25lIiByeD0iOSIgcnk9IjkiLz4KICAgIDx0ZXh0IHg9IjI1IiB5PSIxMiIgZm9udC1mYW1pbHk9IkhlbHZldGljYSIgZm9udC1zaXplPSIxMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNTE2LjUgMTc5LjUpIj5jYW5jZWxsZWQ8L3RleHQ+CiAgICA8cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgZD0iTTcxIDIxOXY3NGg1MHYxNi42MyIgcG9pbnRlci1ldmVudHM9Im5vbmUiLz4KICAgIDxwYXRoIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLW1pdGVybGltaXQ9IjEwIiBkPSJtMTIxIDMxNC44OC0zLjUtNyAzLjUgMS43NSAzLjUtMS43NXoiIHBvaW50ZXItZXZlbnRzPSJub25lIi8+CiAgICA8cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjYwIiB4PSIxMSIgeT0iMTU5IiBmaWxsPSIjZGFlOGZjIiBzdHJva2U9IiM2YzhlYmYiIHBvaW50ZXItZXZlbnRzPSJub25lIiByeD0iOSIgcnk9IjkiLz4KICAgIDx0ZXh0IHg9IjE1IiB5PSIxMiIgZm9udC1mYW1pbHk9IkhlbHZldGljYSIgZm9udC1zaXplPSIxMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNTUuNSAxODIuNSkiPnJlYWR5PC90ZXh0PgogICAgPHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIGQ9Ik00MzkgMjQwaDUydjM0MUgxNjYuMzciIHBvaW50ZXItZXZlbnRzPSJub25lIi8+CiAgICA8dXNlIHhsaW5rOmhyZWY9IiNyZXVzZS0wIiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIHBvaW50ZXItZXZlbnRzPSJub25lIi8+CiAgICA8cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjYwIiB4PSIzMTkiIHk9IjIxMCIgZmlsbD0iI2Y4Y2VjYyIgc3Ryb2tlPSIjYjg1NDUwIiBwb2ludGVyLWV2ZW50cz0ibm9uZSIgcng9IjkiIHJ5PSI5Ii8+CiAgICA8dGV4dCB4PSIyMSIgeT0iMTIiIGZvbnQtZmFtaWx5PSJIZWx2ZXRpY2EiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDM1Ny41IDIzMy41KSI+cmVqZWN0ZWQ8L3RleHQ+CiAgICA8cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgZD0iTTIyMSAyNzB2MjNoLTQwdjE2LjYzIiBwb2ludGVyLWV2ZW50cz0ibm9uZSIvPgogICAgPHBhdGggc3Ryb2tlPSIjMDAwIiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIGQ9Im0xODEgMzE0Ljg4LTMuNS03IDMuNSAxLjc1IDMuNS0xLjc1eiIgcG9pbnRlci1ldmVudHM9Im5vbmUiLz4KICAgIDxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iNjAiIHg9IjE2MSIgeT0iMjEwIiBmaWxsPSIjZGFlOGZjIiBzdHJva2U9IiM2YzhlYmYiIHBvaW50ZXItZXZlbnRzPSJub25lIiByeD0iOSIgcnk9IjkiLz4KICAgIDx0ZXh0IHg9IjI0IiB5PSIxMiIgZm9udC1mYW1pbHk9IkhlbHZldGljYSIgZm9udC1zaXplPSIxMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTk2LjUgMjMzLjUpIj5hY2NlcHRlZDwvdGV4dD4KICAgIDxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLW1pdGVybGltaXQ9IjEwIiBkPSJtMzQ5IDE3MC05Mi4xIDM3LjU5IiBwb2ludGVyLWV2ZW50cz0ibm9uZSIvPgogICAgPHBhdGggc3Ryb2tlPSIjMDAwIiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIGQ9Im0yNTIuMDQgMjA5LjU4IDUuMTUtNS44OS0uMjkgMy45IDIuOTQgMi41OHoiIHBvaW50ZXItZXZlbnRzPSJub25lIi8+CiAgICA8cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgZD0iTTM3OSAxNzB2MzMuNjMiIHBvaW50ZXItZXZlbnRzPSJub25lIi8+CiAgICA8cGF0aCBzdHJva2U9IiMwMDAiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgZD0ibTM3OSAyMDguODgtMy41LTcgMy41IDEuNzUgMy41LTEuNzV6IiBwb2ludGVyLWV2ZW50cz0ibm9uZSIvPgogICAgPHJlY3Qgd2lkdGg9IjEyMCIgaGVpZ2h0PSI2MCIgeD0iMzE5IiB5PSIxMTAiIGZpbGw9IiNkYWU4ZmMiIHN0cm9rZT0iIzZjOGViZiIgcG9pbnRlci1ldmVudHM9Im5vbmUiIHJ4PSI5IiByeT0iOSIvPgogICAgPHRleHQgeD0iMjMiIHk9IjEyIiBmb250LWZhbWlseT0iSGVsdmV0aWNhIiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgzNTUuNSAxMzMuNSkiPnJlY2VpdmVkPC90ZXh0PgogICAgPHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIGQ9Ik0yODEgMTQwaDIwLTIgMTMuNjMiIHBvaW50ZXItZXZlbnRzPSJub25lIi8+CiAgICA8cGF0aCBzdHJva2U9IiMwMDAiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgZD0ibTMxNy44OCAxNDAtNyAzLjUgMS43NS0zLjUtMS43NS0zLjV6IiBwb2ludGVyLWV2ZW50cz0ibm9uZSIvPgogICAgPHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIGQ9Ik0yMjEgMTcwdjMzLjYzIiBwb2ludGVyLWV2ZW50cz0ibm9uZSIvPgogICAgPHBhdGggc3Ryb2tlPSIjMDAwIiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIGQ9Im0yMjEgMjA4Ljg4LTMuNS03IDMuNSAxLjc1IDMuNS0xLjc1eiIgcG9pbnRlci1ldmVudHM9Im5vbmUiLz4KICAgIDxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLW1pdGVybGltaXQ9IjEwIiBkPSJtMjUxIDE3MCA5Mi4xIDM3LjU5IiBwb2ludGVyLWV2ZW50cz0ibm9uZSIvPgogICAgPHBhdGggc3Ryb2tlPSIjMDAwIiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIGQ9Im0zNDcuOTYgMjA5LjU4LTcuOC41OSAyLjk0LTIuNTgtLjI5LTMuOXoiIHBvaW50ZXItZXZlbnRzPSJub25lIi8+CiAgICA8cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjYwIiB4PSIxNjEiIHk9IjExMCIgZmlsbD0iI2RhZThmYyIgc3Ryb2tlPSIjNmM4ZWJmIiBwb2ludGVyLWV2ZW50cz0ibm9uZSIgcng9IjkiIHJ5PSI5Ii8+CiAgICA8dGV4dCB4PSIyNyIgeT0iMTIiIGZvbnQtZmFtaWx5PSJIZWx2ZXRpY2EiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE5My41IDEzMy41KSI+cmVxdWVzdGVkPC90ZXh0PgogICAgPHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIGQ9Ik0xMjEgNjF2MjVINzF2NjYuNjMiIHBvaW50ZXItZXZlbnRzPSJub25lIi8+CiAgICA8cGF0aCBzdHJva2U9IiMwMDAiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgZD0ibTcxIDE1Ny44OC0zLjUtNyAzLjUgMS43NSAzLjUtMS43NXoiIHBvaW50ZXItZXZlbnRzPSJub25lIi8+CiAgICA8cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgZD0iTTE4MSA2MXYyNWg0MHYxNy42MyIgcG9pbnRlci1ldmVudHM9Im5vbmUiLz4KICAgIDxwYXRoIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLW1pdGVybGltaXQ9IjEwIiBkPSJtMjIxIDEwOC44OC0zLjUtNyAzLjUgMS43NSAzLjUtMS43NXoiIHBvaW50ZXItZXZlbnRzPSJub25lIi8+CiAgICA8cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgZD0iTTIxMSAzMWgzMzF2MTE4LjYzIiBwb2ludGVyLWV2ZW50cz0ibm9uZSIvPgogICAgPHBhdGggc3Ryb2tlPSIjMDAwIiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIGQ9Im01NDIgMTU0Ljg4LTMuNS03IDMuNSAxLjc1IDMuNS0xLjc1eiIgcG9pbnRlci1ldmVudHM9Im5vbmUiLz4KICAgIDxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iNjAiIHg9IjkxIiB5PSIxIiBmaWxsPSIjZjVmNWY1IiBzdHJva2U9IiM2NjYiIHBvaW50ZXItZXZlbnRzPSJub25lIiByeD0iOSIgcnk9IjkiLz4KICAgIDx0ZXh0IHg9IjEyIiB5PSIxMiIgZm9udC1mYW1pbHk9IkhlbHZldGljYSIgZm9udC1zaXplPSIxMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTM4LjUgMjQuNSkiPmRyYWZ0PC90ZXh0PgogICAgPHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIGQ9Ik03MSA0OTYuNFY1MzFoNzR2MjguNjMiIHBvaW50ZXItZXZlbnRzPSJub25lIi8+CiAgICA8dXNlIHhsaW5rOmhyZWY9IiNyZXVzZS0xIiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIHBvaW50ZXItZXZlbnRzPSJub25lIi8+CiAgICA8cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjYwIiB4PSIxMSIgeT0iNDM2LjQiIGZpbGw9IiNkNWU4ZDQiIHN0cm9rZT0iIzgyYjM2NiIgcG9pbnRlci1ldmVudHM9Im5vbmUiIHJ4PSI5IiByeT0iOSIvPgogICAgPHRleHQgeD0iMjgiIHk9IjEyIiBmb250LWZhbWlseT0iSGVsdmV0aWNhIiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg0Mi41IDQ1OS41KSI+Y29tcGxldGVkPC90ZXh0PgogICAgPHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbWl0ZXJsaW1pdD0iMTAiIGQ9Ik0yMjEgNDk2djM1aC03NnYyOC42MyIgcG9pbnRlci1ldmVudHM9Im5vbmUiLz4KICAgIDx1c2UgeGxpbms6aHJlZj0iI3JldXNlLTEiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgcG9pbnRlci1ldmVudHM9Im5vbmUiLz4KICAgIDxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iNjAiIHg9IjE2MSIgeT0iNDM2LjQiIGZpbGw9IiNmOGNlY2MiIHN0cm9rZT0iI2I4NTQ1MCIgcG9pbnRlci1ldmVudHM9Im5vbmUiIHJ4PSI5IiByeT0iOSIvPgogICAgPHRleHQgeD0iMTQiIHk9IjEyIiBmb250LWZhbWlseT0iSGVsdmV0aWNhIiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyMDYuNSA0NTkuNSkiPmZhaWxlZDwvdGV4dD4KICAgIDxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLW1pdGVybGltaXQ9IjEwIiBkPSJNMzE5IDM2MUgyMTcuMzciIHBvaW50ZXItZXZlbnRzPSJub25lIi8+CiAgICA8cGF0aCBzdHJva2U9IiMwMDAiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgZD0ibTIxMi4xMiAzNjEgNy0zLjUtMS43NSAzLjUgMS43NSAzLjV6IiBwb2ludGVyLWV2ZW50cz0ibm9uZSIvPgogICAgPHJlY3Qgd2lkdGg9IjEyMCIgaGVpZ2h0PSI2MCIgeD0iMzE5IiB5PSIzMTYiIGZpbGw9IiNmZmYyY2MiIHN0cm9rZT0iI2Q2YjY1NiIgcG9pbnRlci1ldmVudHM9Im5vbmUiIHJ4PSI5IiByeT0iOSIvPgogICAgPHRleHQgeD0iMjAiIHk9IjEyIiBmb250LWZhbWlseT0iSGVsdmV0aWNhIiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgzNTguNSAzMzkuNSkiPm9uLWhvbGQ8L3RleHQ+CiAgICA8Y2lyY2xlIGN4PSIxNDUiIGN5PSI1ODEiIHI9IjE1IiBmaWxsPSIjZmZmIiBzdHJva2U9IiMwMDAiIHBvaW50ZXItZXZlbnRzPSJub25lIi8+CiAgICA8Y2lyY2xlIGN4PSIxNDUiIGN5PSI1ODEiIHI9IjYuNDk0OCIgZmlsbD0iI2ZmZiIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjEyLjk5IiBwb2ludGVyLWV2ZW50cz0ibm9uZSIvPgogIDwvZz4KPC9zdmc+)
+
+`Task.businessStatus` should map to your implementation's specific operational funnel. It provides fine-grained information to help customer service and operations teams troubleshoot tasks and monitor progress. It is also useful for analytics teams to compute conversion metrics between pipeline stages.
+
+`Task.statusReason` describes *why* the [`Task`](/docs/api/fhir/resources/task) has the current status, and is most commonly used when `status` is set to `"on-hold"` or `"cancelled"`. Using an orthogonal `statusReason` allows operations teams to efficiently query for all tasks at the same point in the funnel, while analytics teams can further break down by all the reasons they may be on hold.
+
+## Task priority[​](#task-priority "Direct link to Task priority")
+
+`Task.priority` can be used to indicate the urgency of the task. This field uses a fixed set of codes that are borrowed from acute in-patient care settings.
+
+| **Code**                                                                                       | **Definition**                                                                               |
+| ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| [`routine`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-routine) | The request has normal priority.                                                             |
+| [`urgent`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-urgent)   | The request should be actioned promptly - higher priority than `routine`.                    |
+| [`asap`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-asap)       | The request should be actioned as soon as possible - higher priority than `urgent`.          |
+| [`stat`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-stat)       | The request should be actioned immediately - highest possible priority (i.e., an emergency). |
+
+While these terms might feel awkward in a digital health setting, Medplum recommends that implementations use these codes rather than create their own extensions in order to maintain interoperability with the ecosystem.
+
+## Task assignment[​](#task-assignment "Direct link to Task assignment")
+
+`Task.for` indicates who *benefits* from the task, and is most commonly the patient for whom care is being delivered.
+
+`Task.owner` indicates the party responsible for *performing* the task. This can be either:
+
+* An individual: [`Practitioner`](/docs/api/fhir/resources/practitioner), [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole), [`Patient`](/docs/api/fhir/resources/patient), [`RelatedPerson`](/docs/api/fhir/resources/relatedperson), or
+* A group: [`Organization`](/docs/api/fhir/resources/organization), [`HealthcareService`](/docs/api/fhir/resources/healthcareservice), [`CareTeam`](/docs/api/fhir/resources/careteam)
+
+You can search for all unassigned tasks using the [`:missing`](/docs/search/basic-search#missing) search modifier.
+
+<Tabs>
+  <Tab title="Typescript">
+    ```
+    await medplum.searchResources('Task', 'owner:missing=true');
+    ```
+  </Tab>
+
+  <Tab title="CLI">
+    ```
+    medplum get 'Task?owner:missing=true'
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```
+    curl 'https://api.medplum.com/fhir/R4/Task?owner:missing=true' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+    ```
+  </Tab>
+</Tabs>
+
+<Check>
+  A common pattern in telehealth practices is the assignment of tasks to all practitioners with a given role (e.g., clinical specialty, level of credential, etc.). `Task.performerType` is a searchable element that can be used to indicate which roles can/should perform this task.
+
+  It is a best practice to select these roles from a standard code system to promote interoperability. The [US Core Guidelines](/docs/fhir-datastore/understanding-uscdi-dataclasses) recommend using the [SNOMED Care Team Member Function](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion) valueset for `performerType`.
+
+  In rare instances, SNOMED might not contain an appropriate code for a given role (e.g., Customer Service Representative). Medplum recommends using the [Standard Occupational Classification (SOC)](https://www.bls.gov/soc/) codes published by the Bureau of Labor Statistics.
+
+  The table below contains SNOMED codes for common roles used in digital healthcare. Use the [SNOMED online browser](https://browser.ihtsdotools.org/?perspective=full\&conceptId1=223366009\&edition=MAIN/2023-06-30\&release=\&languages=en) to search for additional codes.
+
+  | Name                       | SNOMED Code                                                                                                                                                        | SOC Code                                                  |
+  | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+  | Doctors                    | 158965000 ([Doctor](https://browser.ihtsdotools.org/?perspective=full\&conceptId1=158965000\&edition=MAIN/2023-03-31\&release=\&languages=en))                     | 29-1210 (Physicians)                                      |
+  | Nurse Practitioner         | 224571005 ([Nurse Practitioner](https://browser.ihtsdotools.org/?perspective=full\&conceptId1=224571005\&edition=MAIN/2023-03-31\&release=\&languages=en))         | 29-1171 (Nurse Practitioners)                             |
+  | Registered Nurse           | 224535009 ([Registered Nurse](https://browser.ihtsdotools.org/?perspective=full\&conceptId1=224535009\&edition=MAIN/2023-03-31\&release=\&languages=en))           | 29-1141 (Registered Nurses)                               |
+  | Care Coordinator           | 768820003 ([Care Coordinator](https://browser.ihtsdotools.org/?perspective=full\&conceptId1=768820003\&edition=MAIN/2023-03-31\&release=\&languages=en))           | 11-9111 (Medical and Health Services Managers)            |
+  | Care Team Coordinator      | 768821004 ([Care Team Coordinator](https://browser.ihtsdotools.org/?perspective=full\&conceptId1=768821004\&edition=MAIN/2023-03-31\&release=\&languages=en))      | 11-9111 (Medical and Health Services Managers)            |
+  | Medical Billing Specialist | 1251542004 ([Medical Coder](https://browser.ihtsdotools.org/?perspective=full\&conceptId1=1251542004\&edition=MAIN/2023-04-30\&release=\&languages=en))            | 29-2072 (Medical Records Specialists)                     |
+  | Quality Assurance          | 56542007 ([Medical record administrator](https://browser.ihtsdotools.org/?perspective=full\&conceptId1=56542007\&edition=MAIN/2023-04-30\&release=\&languages=en)) | 15-1253 (Software Quality Assurance Analysts and Testers) |
+  | Assistant                  | 449161006 ([Physician assistant](https://browser.ihtsdotools.org/?perspective=full\&conceptId1=449161006\&edition=MAIN/2023-03-31\&release=\&languages=en))        | 29-1071 (Physician Assistants)                            |
+
+  Below is an example of a `Task.performerType` [CodeableConcept](/docs/fhir-basics#standardizing-data-codeable-concepts) using both SNOMED and SOC systems.
+
+  ```
+  {  resourceType: 'Task',  // ...  performerType: [    {      text:'Medical Billing Specialist',      coding:[        // Snomed        {          code:'1251542004',          system: 'http://snomed.info/sct',          display: 'Medical Coder'        },        // US SOC        {          code:"29-2072"          system: "https://www.bls.gov/soc"        }      ],    }  ]}
+  ```
+</Check>
+
+## Task focus[​](#task-focus "Direct link to Task focus")
+
+The `Task.focus` element tracks the FHIR resource being *operated on* by this task, known as the "focal resource". See the [Examples](#examples) section below for examples of focal resources in common scenarios.
+
+Well maintained `Task.focus` elements are critical for data hygiene and streamlining operations and analytics . Ensuring that every [`Task`](/docs/api/fhir/resources/task) has a populated `focus` reference will make it easier to find all touchpoints for a given clinical resource, spot operational bottlenecks, and calculate turnaround-times, conversions, and care quality metrics as your implementation scales.
+
+## Task start / due dates[​](#task-start--due-dates "Direct link to Task start / due dates")
+
+The `Task.restriction.period` field describes the time period over which the [`Task`](/docs/api/fhir/resources/task) should be fulfilled, with `Task.restriction.period.end` representing the *due date*, and `Task.restriction.period.start` representing the (potentially optional) start date.
+
+## Task completion times[​](#task-completion-times "Direct link to Task completion times")
+
+The `Task.executionPeriod` field describes the time period over which the [`Task`](/docs/api/fhir/resources/task) was actually actioned. Properly populating this field makes it easier to identify stalled tasks and compute turnaround-time metrics.
+
+`Task.executionPeriod.start` is used to store the start time of the *first action* taken against this task.
+
+`Task.executionPeriod.end` is used to mark the completion time of the *final action* taken against this task.
+
+## Task comments[​](#task-comments "Direct link to Task comments")
+
+`Task.note` can be used to capture narrative text that is not represented elsewhere in the resource.
+
+The most common use for this field is to record comments from the task assignee as they work on the task. When used this way, it is a best practice to include the `author` and `time` fields in the [`Annotation`](/docs/api/fhir/datatypes/annotation).
+
+## Subtasks[​](#subtasks "Direct link to Subtasks")
+
+`Tasks` can be organized into a hierarchical structure to create subtasks. To represent this hierarchy, subtasks should reference their parent using the using the `Task.partOf` element. `Task.partOf` is a searchable field that can be used to query all sub-tasks of a given task, and can be combined with the [`_revinclude`](/docs/search/includes#_include-and-_revinclude) and [`:iterate`](/docs/search/includes#iterate-modifier) directives to query the entire [`Task`](/docs/api/fhir/resources/task) tree.
+
+<Warning>
+  While task hierarchy functionality is powerful, it can be complex to maintain and operationalize. Medplum recommends that most implementations start with a single-level [`Task`](/docs/api/fhir/resources/task) hierarchy and gradually add depth over time.
+</Warning>
+
+## Examples[​](#examples "Direct link to Examples")
+
+| Use Case                                        | Task Owner                    | Focal Resource       | Example `businessStatuses`                                                                                                                                      | Additional Info                                                  |
+| ----------------------------------------------- | ----------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Complete patient intake questionnaire           | New Patient. Care Coordinator | `Questionnaire`      | 1. Questionnaire sent to patient
+2. First reminder sent
+3. Second reminder sent
+4. Questionnaire completed by patient
+5. Responses reviewed by care coordinator | Use `Task.output` to reference resulting `QuestionnaireResponse` |
+| Review lab report                               | Physician                     | `DiagnosticReport`   | 1) Report Available
+2) Assigned to physician
+3) Reviewed by physician
+4) Discussed with patient                                                                 |                                                                  |
+| Verify patient identity (e.g. driver's license) | Patient. Care Coordinator     | `DocumentReference`  | 1. Identification document requested
+2. Documentation received
+3. Documentation received
+4. Documentation verified                                              |                                                                  |
+| Complete encounter notes                        | Physician                     | `ClinicalImpression` | 1) Encounter complete. Physician note required
+2) Note drafted
+3) Note finalized                                                                                | Use `Task.encounter` to reference the original encounter         |
+
+## See Also[​](#see-also "Direct link to See Also")
+
+* The [FHIR Workflow Specification](http://hl7.org/fhir/R4/workflow.html)
+* [Medplum Task Demo](https://github.com/medplum/medplum-task-demo)
+* [Medplum Task Demo Video](https://youtu.be/PHZr9q20tbM) on Youtube
+* [Blog Post: Task Management Apps](/blog/task-management-apps#dashboards)
+* [Charting Data Model](/docs/charting#encounter-charting)
+
+**Tags:**
+
+* [care plans](/docs/tags/care-plans)
+* [workflow](/docs/tags/workflow)
+* [tasks](/docs/tags/tasks)
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/careplans/tasks/tasks.md)
+
+Last updated on **Feb 20, 2026**

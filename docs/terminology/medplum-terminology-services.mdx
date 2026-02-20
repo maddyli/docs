@@ -1,0 +1,60 @@
+---
+title: "Medplum Terminology Services"
+description: "Medplum provides a layer of functionality to make working with coded values simple. Some of the most common use cases are detailed below to show how these components can fit together."
+---
+
+## Binding an input to a set of codes[​](#binding-an-input-to-a-set-of-codes "Direct link to Binding an input to a set of codes")
+
+To restrict the set of values that can be used with an input, it can be bound to a `ValueSet` defining which codes are allowed. This enables a typeahead UI, where the user can select from a list of available codes, and type part of the desired concept to filter the list and aid in selection when the set of possible codes is large.
+
+### Defining the ValueSet[​](#defining-the-valueset "Direct link to Defining the ValueSet")
+
+First, the `ValueSet` resource must be uploaded to the Medplum FHIR server, and must contain a `url` by which to reference it.
+
+```
+{  resourceType: 'ValueSet',  url: 'http://example.com/ValueSet/vitals',  name: 'vitals',  title: 'Vital Signs',  status: 'active',  compose: {    include: [      {        system: 'http://loinc.org',        concept: [          { code: '8310-5', display: 'Body temperature' },          { code: '8462-4', display: 'Diastolic blood pressure' },          { code: '8480-6', display: 'Systolic blood pressure' },          { code: '8867-4', display: 'Heart rate' },          { code: '9279-1', display: 'Respiratory rate' },        ],      },    ],  },};
+```
+
+Additionally, the URL used to refer to the code system in `ValueSet.compose.include.system` must actually correspond to a valid `CodeSystem` resource on the server:
+
+```
+{  resourceType: 'CodeSystem',  url: 'http://loinc.org',  name: 'LOINC',  status: 'active',  content: 'example',  concept: [    { code: '8310-5', display: 'Body temperature' },    { code: '8462-4', display: 'Diastolic blood pressure' },    { code: '8480-6', display: 'Systolic blood pressure' },    { code: '8867-4', display: 'Heart rate' },    { code: '9279-1', display: 'Respiratory rate' },  ],};
+```
+
+### Binding to the Input[​](#binding-to-the-input "Direct link to Binding to the Input")
+
+The `CodeInput`, `CodingInput`, and `CodeableConceptInput` React components provide the ability to connect an input field with a `ValueSet` for typeahead, returning whichever data type is needed by the application.
+
+```
+import { MedplumClient } from '@medplum/core';import type { CodeSystem, Coding, Parameters, ValueSet } from '@medplum/fhirtypes';import { CodingInput } from '@medplum/react';<CodingInput  name="vital-sign-code"  binding="http://example.com/ValueSet/vitals"  path="Observation.code"  onChange={(c: Coding) => {    console.log('User selected: ' + c.display + ' (' + c.system + '|' + c.code + ')');  }}/>;
+```
+
+## Internationalizing Codings[​](#internationalizing-codings "Direct link to Internationalizing Codings")
+
+While coded values provide a consistent way to refer to clinical concepts across different systems and languages, these codes must still ultimately be translated into human-readable terms for users. Many healthcare practices serve people with a diverse set of primary languages, requiring the human-readable display strings to be translated. Building on the strong foundations in the FHIR standard, Medplum provides the ability to work with codes fluently across multiple languages.
+
+### Importing Translated Strings[​](#importing-translated-strings "Direct link to Importing Translated Strings")
+
+A `CodeSystem` resource can embed any number of known translations directly alongside the primary display text using the `designation` field. This field can be used both for synonyms in the primary language, as well as translations into additional languages.
+
+```
+{  resourceType: 'CodeSystem',  status: 'draft',  url: 'http://example.com/CodeSystem/translated',  content: 'example',  concept: [    {      code: 'HR',      // Primary display string      display: 'Heart rate',      designation: [        // Synonym        { value: 'Cardiac rate' },        // Translation        { language: 'fr', value: 'fréquence cardiaque' },      ],    },  ],};
+```
+
+Additionally, synonyms or translations can be added to existing code systems using Medplum's custom [`CodeSystem/$import` API](/docs/api/fhir/operations/codesystem-import).
+
+```
+await medplum.post(medplum.fhirUrl('CodeSystem/$import'), {  resourceType: 'Parameters',  parameter: [    { name: 'url', valueUri: 'http://example.com/CodeSystem/translated' },    // Synonym in primary language    {      name: 'designation',      part: [        { name: 'code', valueCode: 'HR' },        { name: 'value', valueString: 'Pulse rate' },      ],    },    // Translation into other language    {      name: 'designation',      part: [        { name: 'code', valueCode: 'HR' },        { name: 'language', valueCode: 'es' },        { name: 'value', valueString: 'frecuencia cardíaca' },      ],    },  ],} satisfies Parameters);
+```
+
+### Searching With Translations[​](#searching-with-translations "Direct link to Searching With Translations")
+
+Using the [`ValueSet/$expand` API](/docs/api/fhir/operations/valueset-expand), users can leverage these synonyms and translations when searching for a specific code. By default, languages other than the primary are excluded from `filter` search results; a different language can be selected by setting the `displayLanguage` parameter:
+
+```
+const vs = await medplum.createResource<ValueSet>({  resourceType: 'ValueSet',  status: 'draft',  url: 'http://example.com/ValueSet/translated',  compose: {    include: [{ system: 'http://example.com/CodeSystem/translated' }],  },});const expansion = await medplum.valueSetExpand({  url: vs.url,  filter: 'card',  displayLanguage: 'fr',});/* Returns:{  "resourceType": "ValueSet",  "status": "draft",  "url": "http://example.com/ValueSet/translated",  "compose": {    "include": [{ "system": "http://example.com/CodeSystem/translated" }]  },  "expansion": {    "total": 1,    "contains": [      {        "system": "http://example.com/CodeSystem/translated",        "code": "HR",        "display": "fréquence cardiaque"      }    ]  }}*/
+```
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/terminology/medplum-terminology-services.mdx)
+
+Last updated on **Feb 20, 2026**

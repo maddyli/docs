@@ -1,0 +1,28 @@
+---
+title: "Creating Data"
+description: "Data is created in FHIR by using the  operation, which is performed by sending a  request to the server."
+---
+
+Medplum also provides the `createResource` method on the `MedplumClient` which implements the `create` operation. When creating a resource, you do not need to provide an `id`, as it will be assigned by the server.
+
+<Accordion title="Example: Creating a Practitioner">
+  * Typescript
+  * CLI
+  * cURL
+
+  ```
+  const practitioner: Practitioner = await medplum.createResource({  resourceType: 'Practitioner',  name: [{ family: 'Smith', given: ['Alice'], prefix: ['Dr.'] }],});
+  ```
+
+  ```
+  medplum post Practitioner '{"resourceType":"Practitioner","name":[{"family":"Smith","given":["Alice"],"prefix":["Dr."]}]}'
+  ```
+
+  ```
+  curl -X POST 'https://api.medplum.com/fhir/R4/Practitioner' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \  -d {"resourceType":"Practitioner","name":[{"family":"Smith","given":["Alice"],"prefix":["Dr."]}]}
+  ```
+</Accordion>
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/fhir-datastore/creating-data.md)
+
+Last updated on **Feb 20, 2026**

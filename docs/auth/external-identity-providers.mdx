@@ -1,0 +1,85 @@
+---
+title: "External Identity Providers"
+description: "Along with , Medplum supports other external identity providers using the OAuth2 protocol such as Auth0 and AWS Cognito for end user authentication. This is sometimes known as \"Federated Identities\"."
+---
+
+## Auth flow[​](#auth-flow "Direct link to Auth flow")
+
+When an end user authenticates with your client-side web application, we will use the following authentication flow:
+
+![External identity providers flow](/images/docs/auth/assets/images/external-identity-providers-79441e8d1e3cc003fa6ed4e0b06117ca.webp)
+
+[Click to enlarge](/assets/files/external-identity-providers-79441e8d1e3cc003fa6ed4e0b06117ca.webp)
+
+## Example repo[​](#example-repo "Direct link to Example repo")
+
+Medplum provides a minimal example application which demonstrates using Auth0 as an external identity provider. The example is approximately 100 lines of TypeScript code, and can be used as a starting point for any standard OAuth2/OpenID identity provider.
+
+> [https://github.com/medplum/medplum-client-external-idp-demo](https://github.com/medplum/medplum-client-external-idp-demo)
+
+## Setup[​](#setup "Direct link to Setup")
+
+Setup your external authentication provider (Auth0, AWS Cognito, Okta, etc). Use "[https://api.medplum.com/auth/external](https://api.medplum.com/auth/external)" as the "redirect URI" (also known as the "callback URL" in some systems).
+
+Also make sure that your provider accepts the `profile` OIDC scope.
+
+Note the following details:
+
+* Authorize URL
+* Token URL
+* UserInfo URL
+* Client ID
+* Client secret
+
+Setup your Medplum account:
+
+* [Register for a Medplum account](/docs/tutorials/register)
+* Create a `ClientApplication`
+* Set the "Redirect URI" to "[http://localhost:8000/](http://localhost:8000/)"
+* Add an external identity provider with the details from above
+
+## Start the flow[​](#start-the-flow "Direct link to Start the flow")
+
+The [MedplumClient](/docs/sdk/core.medplumclient) TypeScript class provides a [`signInWithExternalAuth`](/docs/sdk/core.medplumclient.signinwithexternalauth) convenience method:
+
+```
+// The login button handler// The user can click this button to initiate the OAuth flow$('login').addEventListener('click', () =>  medplum.signInWithExternalAuth(EXTERNAL_AUTHORIZE_URL, EXTERNAL_CLIENT_ID, EXTERNAL_REDIRECT_URI, {    projectId: MEDPLUM_PROJECT_ID,    clientId: MEDPLUM_CLIENT_ID,    redirectUri: WEB_APP_REDIRECT_URI,  }));
+```
+
+## Handle the code[​](#handle-the-code "Direct link to Handle the code")
+
+When the external identity provider flow redirects back to your web application, it will include a `code` query parameter. This code can be exchanged for a Medplum access token.
+
+The [MedplumClient](/docs/sdk/core.medplumclient) TypeScript class provides a [`processCode`](/docs/sdk/core.medplumclient.processcode) convenience method:
+
+```
+// The code check// If the current URL includes a "code" query string param, then we can exchange it for a tokenconst code = new URLSearchParams(window.location.search).get('code');if (code) {  // Process the code  // On success, remove the query string parameters  medplum    .processCode(code)    .then(() => (window.location.href = window.location.href.split('?')[0]))    .catch(console.error);}
+```
+
+After the code is processed, the Medplum access token will be stored in the browser's local storage. The `MedplumClient` will automatically use the access token for all subsequent API calls.
+
+## FAQ[​](#faq "Direct link to FAQ")
+
+### AWS Cognito[​](#aws-cognito "Direct link to AWS Cognito")
+
+* (If using the Cognito's hosted UI) Set the "redirect uri" by navigating to: Amazon Cognito > User Pools > \[Your pool] > \[Your App Client] > Edit Hosted UI > Allowed callback URLs
+
+* By default, Cognito does not include the `profile` scope. You can add this navigating to: Amazon Cognito > User Pools > \[Your pool] > \[Your App Client] > Edit Hosted UI > OpenID Connect Scopes
+
+* To disable PKCE for Cognito login, do the following:
+
+  * In your client application, pass in `false` for the `pkceEnabled` parameter of `signInWithExternalAuth`.
+
+  ```
+  medplum.signInWithExternalAuth(  EXTERNAL_AUTHORIZE_URL,  EXTERNAL_CLIENT_ID,  EXTERNAL_REDIRECT_URI,  {    projectId: MEDPLUM_PROJECT_ID,    clientId: MEDPLUM_CLIENT_ID,    redirectUri: WEB_APP_REDIRECT_URI,  },  false,),
+  ```
+
+  * In the Medplum App, navigate to your [ClientApplication](https://app.medplum.com/ClientApplication) > Edit and set "PKCE Optional" to `true`
+
+**Tags:**
+
+* [auth](/docs/tags/auth)
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/auth/external-identity-providers.mdx)
+
+Last updated on **Feb 20, 2026**

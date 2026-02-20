@@ -1,0 +1,42 @@
+---
+title: "Connection API"
+description: "Using the normal \"List\" search (i.e., \"PatientList\") is the most common way to search for resources. However, the FHIR GraphQL specification also supports the , which is a more complex way to search for resources."
+---
+
+The most immediate advantage of the Connection API is support for retrieving total counts. The Connection API also includes more features from FHIR Bundle such as `mode` and `score`.
+
+To use the Connection API, append "Connection" to the resource type rather than "List". For example, use "PatientConnection" instead of "PatientList".
+
+Here is an example of searching for a list of `Patient` resources using the Connection API:
+
+<Tabs>
+  <Tab title="GraphQL">
+    ```
+    {  PatientConnection {    count    edges {      resource {        resourceType        id        name { given family }      }    }  }}
+    ```
+  </Tab>
+
+  <Tab title="TypeScript">
+    ```
+    await medplum.graphql(`{  PatientConnection {    count    edges {      resource {        resourceType        id        name { given family }      }    }  }}`);
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```
+    curl -X POST 'https://api.medplum.com/fhir/R4/$graphql' \  -H "Content-Type: application/json" \  -H "Authorization: Bearer $your_access_token" \  -d '{"query":"{ PatientConnection count { edges { resource { resourceType id name { given family } } } } }"}'
+    ```
+  </Tab>
+</Tabs>
+
+<Accordion title="Example Response">
+  ```
+  data: {  PatientConnection: {    count: 2,    edges: [      {        resource: {          resourceType: 'Patient',          id: 'example-patient-id-1',          name: [            {              given: ['Bart'],              family: 'Simpson',            },          ],        },      },      {        resource: {          resourceType: 'Patient',          id: 'example-patient-id-2',          name: [            {              given: ['Homer'],              family: 'Simpson',            },          ],        },      },    ],  },},
+  ```
+</Accordion>
+
+See the "[Connection API](https://hl7.org/fhir/graphql.html#searching)" section of the FHIR GraphQL specification for more information.
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/graphql/connections.mdx)
+
+Last updated on **Feb 20, 2026**

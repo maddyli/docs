@@ -1,0 +1,45 @@
+---
+title: "Client Application Endpoint"
+---
+
+## POST `/admin/projects/:projectId/client`[​](#post-adminprojectsprojectidclient "Direct link to post-adminprojectsprojectidclient")
+
+Creates a new [ClientApplication](/docs/api/fhir/medplum/clientapplication). Posting to this endpoint creates a [`ClientApplication`](/docs/api/fhir/medplum/clientapplication) resource and a corresponding [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resource.
+
+### Parameters[​](#parameters "Direct link to Parameters")
+
+```
+{  name: string;  description?: string;  redirectUri?: string;  accessPolicy?: Reference<AccessPolicy>;  identityProvider?: {    authorizeUrl?: string;    tokenUrl?: string;    userInfoUrl?: string;    clientId?: string;    clientSecret?: string;    useSubject?: boolean;  }}
+```
+
+### Example request[​](#example-request "Direct link to Example request")
+
+<Tabs>
+  <Tab title="Typescript">
+    ```
+    await medplum.post('admin/projects/:projectId/client', {  name: 'Hello World Client',  description: 'Client App for Medplum Hello World',  redirectUri: 'https://example.com/redirect',  accessPolicy: {    reference: 'AccessPolicy/access-policy-id',  },});
+    ```
+  </Tab>
+
+  <Tab title="CLI">
+    ```
+    medplum post admin/projects/:projectId/client \'{  "name": "Hello World Client",  "description": "Client App for Medplum Hello World",  "redirectUri": "https://example.com/redirect"  "accessPolicy": {    "reference": "AccessPolicy/access-policy-id"  }}'
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```
+    curl https://api.medplum.com/admin/projects/:projectId/client \  -H "Authorization: Bearer $TOKEN" \  -H "Content-Type: application/json" \  -d '{  "name": "Hello World Client",  "description": "Hello world",  "redirectUri": "https://example.com/redirect"  "accessPolicy": {    "reference": "AccessPolicy/:access-policy-id"  }'
+    ```
+  </Tab>
+</Tabs>
+
+### Example Response[​](#example-response "Direct link to Example Response")
+
+```
+{  meta: {    project: ':projectId',    //...  },  resourceType: 'ClientApplication',  name: 'Hello World Client',  id: ':clientId',  secret: ':clientSecret',  description: 'Client App for Medplum Hello World',  redirectUri: 'https://example.com/redirect'}
+```
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/api/project-admin/client.md)
+
+Last updated on **Feb 20, 2026**

@@ -1,0 +1,239 @@
+---
+title: "Install on Ubuntu"
+description: "This guide provides step-by-step instructions for deploying Medplum on Ubuntu using our official APT repository. The installation process is streamlined through package management while maintaining the robustness and security required for production environments. This guide was tested on Ubuntu 24.04 but is compatible with most recent Ubuntu versions."
+---
+
+Using Medplum's APT repository offers several advantages: automated dependency management, simplified updates, and a standardized installation process. The guide covers all essential components including PostgreSQL database configuration, Redis setup, Node.js installation, and Nginx configuration with SSL/TLS support through Let's Encrypt.
+
+This installation method is well-suited for production deployments where you want to maintain direct control over your infrastructure while benefiting from streamlined package management. It provides a balance between ease of deployment and system control, making it an excellent choice for organizations that prefer traditional Linux server architectures.
+
+## Prerequisites[​](#prerequisites "Direct link to Prerequisites")
+
+* Ubuntu 24.04
+* Allow SSH access
+* Allow HTTP and HTTPS access
+* Public IP address for Lets Encrypt SSL certificate
+* At least 4 GB of RAM
+* At least 4 GB of disk space
+
+## Install PostgreSQL[​](#install-postgresql "Direct link to Install PostgreSQL")
+
+<Note>
+  These Postgres installation steps can be skipped if you've already installed Postgres, or are using a database hosted elsewhere. Medplum server can be configured to connect to remote databases. We'll discuss how to connect to a remote Postgres server below.
+</Note>
+
+Add the PostgreSQL Apt Repository (see [PostgreSQL Apt Repository docs](https://www.postgresql.org/download/linux/ubuntu/))
+
+```
+# Configure the Apt repositorysudo apt install -y postgresql-commonsudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh# Install Postgres 16sudo apt install postgresql-16 postgresql-client-16
+```
+
+Start Postgres
+
+```
+sudo pg_ctlcluster 16 main start
+```
+
+Start Postgres client
+
+```
+sudo -u postgres psql
+```
+
+Create a "medplum" user:
+
+```
+CREATE USER medplum WITH PASSWORD 'medplum';
+```
+
+Create a "medplum" database:
+
+```
+CREATE DATABASE medplum;GRANT ALL PRIVILEGES ON DATABASE medplum TO medplum;\c medplumGRANT ALL ON SCHEMA public TO medplum;ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO medplum;
+```
+
+Exit psql
+
+```
+exit
+```
+
+## Install Redis[​](#install-redis "Direct link to Install Redis")
+
+```
+sudo apt-get install redis-server
+```
+
+Open the Redis config file
+
+```
+sudo vi /etc/redis/redis.conf
+```
+
+Uncomment the "requirepass" line and set a password
+
+```
+requirepass medplum
+```
+
+Restart Redis
+
+```
+sudo systemctl restart redis-server
+```
+
+## Install Node.js[​](#install-nodejs "Direct link to Install Node.js")
+
+Add the Node.js v22.x Ubuntu repository:
+
+```
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash -
+```
+
+Install Node.js
+
+```
+sudo apt-get install nodejs
+```
+
+## Install Nginx[​](#install-nginx "Direct link to Install Nginx")
+
+Install Nginx and Certbot:
+
+```
+sudo apt-get install nginx certbot python3-certbot-nginx
+```
+
+Start Nginx:
+
+```
+sudo systemctl start nginxsudo systemctl enable nginx
+```
+
+Before setting up SSL, make sure your domains point to your server's IP address. There should be two DNS entries, one for `app` and one for `api`. For example, `app.example.com` and `api.example.com`. Please refer to your DNS provider's documentation for more information.
+
+Get SSL certificates from Let's Encrypt for both domains:
+
+```
+sudo certbot --nginx -d app.example.comsudo certbot --nginx -d api.example.com
+```
+
+## Install Medplum[​](#install-medplum "Direct link to Install Medplum")
+
+Add the Medplum Ubuntu repository:
+
+```
+curl -fsSL https://apt.medplum.com/setup.sh | sudo bash -sudo apt-get update
+```
+
+Install Medplum:
+
+```
+sudo apt-get install medplum
+```
+
+Start Medplum:
+
+```
+sudo systemctl start medplum
+```
+
+## Enable the sites[​](#enable-the-sites "Direct link to Enable the sites")
+
+Enable the site:
+
+```
+sudo ln -s /etc/nginx/sites-available/medplum-app /etc/nginx/sites-enabled/sudo ln -s /etc/nginx/sites-available/medplum-server /etc/nginx/sites-enabled/
+```
+
+Remove the default site:
+
+```
+sudo rm /etc/nginx/sites-enabled/default
+```
+
+Test the configuration:
+
+```
+sudo nginx -t
+```
+
+If the test is successful, reload Nginx:
+
+```
+sudo systemctl reload nginx
+```
+
+## Verify the setup[​](#verify-the-setup "Direct link to Verify the setup")
+
+You should now be able to view the API server healthcheck at [https://api.example.com/healthcheck](https://api.example.com/healthcheck)
+
+And the app at [https://app.example.com](https://app.example.com)
+
+## Admin Commands[​](#admin-commands "Direct link to Admin Commands")
+
+Check service status:
+
+```
+systemctl status medplum
+```
+
+Start service:
+
+```
+sudo systemctl start medplum
+```
+
+Stop service:
+
+```
+sudo systemctl stop medplum
+```
+
+Restart service:
+
+```
+sudo systemctl restart medplum
+```
+
+Check logs:
+
+```
+journalctl -u medplum
+```
+
+Force reinstall:
+
+```
+sudo apt-get install --reinstall medplum
+```
+
+Reconfigure Medplum:
+
+<Warning>
+  During the installation of Medplum, you will be asked for general configuration (app domain, api domain, database host). This is used to generate the correct nginx configurations and the medplum.config.json file. If you've missed these configuration you can reconfigure with the following command line
+</Warning>
+
+```
+sudo dpkg-reconfigure medplum
+```
+
+Then force a reinstallation of Medplum.
+
+## Additional Configuration[​](#additional-configuration "Direct link to Additional Configuration")
+
+The Medplum server configuration is located at `/etc/medplum/medplum.config.json`. You can edit this file to change the server configuration. After editing the file, restart the Medplum service:
+
+```
+sudo systemctl restart medplum
+```
+
+See [Config Settings](/docs/self-hosting/server-config) for full details on Medplum configuration settings.
+
+### Step 5 - Run the server[​](#step-5---run-the-server "Direct link to Step 5 - Run the server")
+
+Now we are ready to run the server.
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/self-hosting/install-on-ubuntu.md)
+
+Last updated on **Feb 20, 2026**

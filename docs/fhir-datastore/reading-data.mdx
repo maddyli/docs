@@ -1,0 +1,38 @@
+---
+title: "Reading Data"
+description: "A very common operation is reading the data of a specified resource given its . The FHIR  operation is used by sending an HTTP  request."
+---
+
+Medplum also provides the `readResource` helper function as a part of the `MedplumClient`. This function takes a `resourceType` and `id` of the resource you would like to read.
+
+<Tabs>
+  <Tab title="Typescript">
+    ```
+    await medplum.readResource('Patient', 'homer-simpson');
+    ```
+  </Tab>
+
+  <Tab title="CLI">
+    ```
+    medplum get Patient/homer-simpson
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```
+    curl 'https://api.medplum.com/fhir/R4/Patient/homer-simpson' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+  If you attempt to read a resource with an `id` that does not exist, you will receive a status code of `404 Not Found`. However, if you search for a resource that has been deleted you will receive a staus code of `410 Gone`.
+</Note>
+
+<Note>
+  If you want to read multiple resources, you should use Medplum's search functionality. For more info see the [Search Basics docs](/docs/search/basic-search)
+</Note>
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/fhir-datastore/reading-data.md)
+
+Last updated on **Feb 20, 2026**

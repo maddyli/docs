@@ -1,0 +1,54 @@
+---
+title: "FHIRcast with .NET client"
+description: "This is a guide for using the official  with the Medplum server."
+---
+
+## Prerequisites[​](#prerequisites "Direct link to Prerequisites")
+
+This guide assumes basic familiarity with git, Visual Studio, and C#.
+
+## Getting Started[​](#getting-started "Direct link to Getting Started")
+
+First, clone the repository using git:
+
+```
+git clone git@github.com:fhircast/.net.git
+```
+
+Next, open the `TestPowerCast.sln` file in Visual Studio.
+
+Once the solution opens successfully, you can run the test application:
+
+1. Right click on "TestPowerCast" in Solution Explorer
+2. Click on "Debug"
+3. Click on "Start New Instance"
+
+![Run the TestPowerCast app](/images/docs/fhircast/assets/images/run-powercast-example-b98c4af6a9286dd2a08b06ed21c2c6c4.png)
+
+If all goes well, you should now have a running instance of the test app.
+
+## Connecting to Medplum Server[​](#connecting-to-medplum-server "Direct link to Connecting to Medplum Server")
+
+On the "Configuration Data" tab:
+
+1. Check "Use Existing Auth Token" (the built-in authentication only works with Auth0)
+2. Enter the Hub URL for your Medplum server a. Add "/fhircast/STU3" to your Medplum server base URL b. For Medplum cloud hosted: [https://api.medplum.com/fhircast/STU3](https://api.medplum.com/fhircast/STU3) c. By default for running from source: [http://localhost:8103/fhircast/STU3](http://localhost:8103/fhircast/STU3)
+3. Enter your FHIRcast topic
+4. Enter your Medplum server auth token (see [Auth and Identity](http://localhost:3000/docs/auth) to get started)
+
+![TestPowerCast Configuration Data](/images/docs/fhircast/assets/images/testpowercast-configuration-data-7b0bb7da647e0417b49000a91bb566b3.png)
+
+Next, on the "Subscribe" tab:
+
+1. Enter which events you would like to subscribe to (i.e., "Patient-open")
+2. Click "Subscribe"
+
+If all goes well, you should see "Success" messages in the event log:
+
+![TestPowerCast Subscribe](/images/docs/fhircast/assets/images/testpowercast-subscribe-5d4a197ab44f93aae54a4f13d460950c.png)
+
+You can now start publishing events to the topic.
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/fhircast/dotnet-client.md)
+
+Last updated on **Feb 20, 2026**

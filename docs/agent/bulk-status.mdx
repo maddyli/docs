@@ -1,0 +1,68 @@
+---
+title: "Agent Bulk Status"
+description: "Gets the status of an agent or agents based on given search criteria. Useful for seeing whether agents are connected and listing their current software version."
+---
+
+## Invoke the `$bulk-status` operation[​](#invoke-the-bulk-status-operation "Direct link to invoke-the-bulk-status-operation")
+
+```
+[base]/Agent/$bulk-status
+```
+
+For example:
+
+```
+medplum get 'Agent/$bulk-status'
+```
+
+### Valid Response[​](#valid-response "Direct link to Valid Response")
+
+The response to this operation is a `Bundle` of `Parameters`. Each `Parameters` within the `Bundle` contains an `agent` and a `result`, which is the result of calling the `$status` operation on this `Agent`, either a `Parameters` or `OperationOutcome` resource.
+
+Example response:
+
+```
+{  "resourceType": "Bundle",  "type": "collection",  "entry": [    {      "resource": {        "resourceType": "Parameters",        "parameter": [          {            "name": "agent",            "resource": {              "resourceType": "Agent",              "name": "Test Agent 1",              "status": "active",              "id": "93f8b2fb-65a3-4977-a175-71b73b26fde7",              "meta": {                "versionId": "e182201a-6925-467f-a92b-496193fb4c39",                "lastUpdated": "2024-04-19T20:29:25.087Z"              }            }          },          {            "name": "result",            "resource": {              "resourceType": "Parameters",              "parameter": [                {                  "name": "status",                  "valueCode": "connected"                },                {                  "name": "version",                  "valueString": "3.1.4"                },                {                  "name": "lastUpdated",                  "valueInstant": "2024-04-19T00:00:00Z"                }              ]            }          }        ]      }    },    {      "resource": {        "resourceType": "Parameters",        "parameter": [          {            "name": "agent",            "resource": {              "resourceType": "Agent",              "name": "Test Agent 2",              "status": "active",              "id": "93f8b2fb-65a3-4977-a175-71b73b26fde7",              "meta": {                "versionId": "e182201a-6925-467f-a92b-496193fb4c39",                "lastUpdated": "2024-04-19T20:29:25.087Z"              }            }          },          {            "name": "result",            "resource": {              "resourceType": "Parameters",              "parameter": [                {                  "name": "status",                  "valueCode": "disconnected"                },                {                  "name": "version",                  "valueString": "3.1.2"                },                {                  "name": "lastUpdated",                  "valueInstant": "2024-04-19T00:00:00Z"                }              ]            }          }        ]      }    },    {      "resource": {        "resourceType": "Parameters",        "parameter": [          {            "name": "agent",            "resource": {              "resourceType": "Agent",              "name": "Test Agent 3",              "status": "off",              "id": "93f8b2fb-65a3-4977-a175-71b73b26fde7",              "meta": {                "versionId": "e182201a-6925-467f-a92b-496193fb4c39",                "lastUpdated": "2024-04-19T20:29:25.087Z"              }            }          },          {            "name": "result",            "resource": {              "resourceType": "OperationOutcome",              "issue": [                {                  "severity": "error",                  "code": "exception",                  "details": {                    "text": "Something weird happened when getting the status"                  }                }              ],            }          }        ]      }    }  ]}
+```
+
+### Invalid Response[​](#invalid-response "Direct link to Invalid Response")
+
+Example outcome when exceeding max `_count` limit:
+
+```
+{  "resourceType": "OperationOutcome",  "issue": [    {      "severity": "error",      "code": "invalid",      "details": {        "text": "'_count' of 101 is greater than max of 100"      }    }  ]}
+```
+
+## Using search parameters[​](#using-search-parameters "Direct link to Using search parameters")
+
+All of the `Agent` search parameters can be used to select which agents to query the status of.
+
+Some useful search parameters are:
+
+* `name`
+* `status`
+* `_count` and `_offset`
+
+### Recipes[​](#recipes "Direct link to Recipes")
+
+Getting the status for one agent by name:
+
+```
+medplum get 'Agent/$bulk-status?name=Test+Agent+1'
+```
+
+Getting the status of all active agents:
+
+```
+medplum get 'Agent/$bulk-status?status=active'
+```
+
+Paging through all agent statuses, 50 at a time:
+
+```
+medplum get 'Agent/$bulk-status?_count=50&_offset=0'medplum get 'Agent/$bulk-status?_count=50&_offset=50'
+```
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/agent/bulk-status.md)
+
+Last updated on **Feb 20, 2026**

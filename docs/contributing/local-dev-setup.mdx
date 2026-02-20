@@ -1,0 +1,44 @@
+---
+title: "Local development setup"
+description: "Ready to get started developing Medplum on your local machine? Great! First, you'll need to set up your own copy of the  to work on, by  into your own GitHub account.  If you don't want to make changes and submit them back to the Medplum project, you can skip this step and proceed directly to the next step."
+---
+
+After you've created your own fork of the Medplum repository, copy it to your local machine to work on by cloning it.
+
+## Clone the repo[​](#clone-the-repo "Direct link to Clone the repo")
+
+If you created a fork to submit Pull Requests from, you'll need to ensure you clone your fork, rather than the official Medplum repository. Otherwise, use `git@github.com:medplum/medplum.git` below to copy the official repository, which you can use to build and run the app locally.
+
+```
+git clone git@github.com:{YOUR GITHUB USERNAME}/medplum.git medplum
+```
+
+If you get an error saying `Permission denied` using `ssh`, you can refer to the [Github docs on setting up SSH keys](https://help.github.com/articles/error-permission-denied-publickey/). Alternatively, you can use the `https` method as a fallback.
+
+```
+git clone https://github.com/{YOUR GITHUB USERNAME}/medplum.git medplum
+```
+
+That will create a complete copy of the project source code on your local machine, including code for the Medplum Server, Medplum App, and associated libraries.
+
+In the next step, we'll build the application and run the tests.
+
+## (Optional) Set up [Prettier](https://prettier.io/) and [ESLint](https://eslint.org/) in your IDE[​](#optional-set-up-prettier-and-eslint-in-your-ide "Direct link to optional-set-up-prettier-and-eslint-in-your-ide")
+
+The Medplum CI system uses the tools [Prettier](https://prettier.io/) and [ESLint](https://eslint.org/) to enforce its code style and ensure consistent coding standards.
+
+If you are planning on submitting a PR, we highly suggest setting up these tools in your IDE to receive feedback and fix errors while developing.
+
+### On Visual Studio Code[​](#on-visual-studio-code "Direct link to On Visual Studio Code")
+
+The medplum repo comes with configured recommended Visual Studio Code extensions.
+
+When you first open with workspace, Visual Studio will automatically prompt you to install the recommended extensions. ![install recommended extensions](/images/docs/contributing/assets/images/install-recommended-extensions-f3a6c35f89cc820a8a626e48973e1277.png)
+
+Alternatively, you can search for the "Recommended Extensions" in the Visual Studio extension manager and install from there.
+
+[](/assets/medias/recommended-extensions-939fcc720d1b49e952ca703bf380d351.webm)
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/contributing/local-dev-setup/local-dev-setup.md)
+
+Last updated on **Feb 20, 2026**

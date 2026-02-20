@@ -1,0 +1,45 @@
+---
+title: "Handling External Files"
+---
+
+## Introduction[​](#introduction "Direct link to Introduction")
+
+While the most valuable way of storing healthcare information is in a structured FHIR representation, healthcare apps often need to store and index documents from external systems. For example, patients may submit medical records from other providers in the form of PDF documents.
+
+The [`DocumentReference`](/docs/api/fhir/resources/documentreference) resource serves as a "pointer" to these external documents so that they can be indexed and searched. Specifically, `DocumentReference.content.attachment` can refer to a [`Binary`](/docs/api/fhir/resources/binary) resource (PDFs, images, videos, etc.), a URL, or anything else supported by the [`Attachment`](/docs/api/fhir/datatypes/attachment) datatype.
+
+See the [`DocumentReference` API guide](/docs/api/fhir/resources/documentreference) for more info.
+
+## Example: Creating a `DocumentReference` for a binary file[​](#example-creating-a-documentreference-for-a-binary-file "Direct link to example-creating-a-documentreference-for-a-binary-file")
+
+This is a similar process to [creating a PDF file from a Bot ](/docs/bots/creating-a-pdf).
+
+First, upload the binary file as a [`Binary`](/docs/api/fhir/resources/binary) resource. Then, create the corresponding `DocumentReference` as a pointer. For more details on using \[`Binary`] resources see the [Binary Data guide](/docs/fhir-datastore/binary-data#referencing-a-binary-in-an-attachment).
+
+<Tabs>
+  <Tab title="Typescript">
+    ```
+    import { MedplumClient, getReferenceString } from '@medplum/core';// Create a `Binary` resource with file dataconst binary = await medplum.createBinary({ data, filename: 'records.pdf', contentType: 'application/pdf' });// Create the `DocumentReference` resourceconst docReference = await medplum.createResource({  resourceType: 'DocumentReference',  status: 'current',  content: [    {      attachment: {        title: 'External Records',        url: getReferenceString(binary),      },    },  ],});
+    ```
+  </Tab>
+
+  <Tab title="CLI">
+    ```
+    medplum loginmedplum post Binary 'data-as-string'# {#   "resourceType": "Binary",#   "id": "example-binary-id",#   "url": "https://storage.medplum.com/binary/..."#    ...# }medplum post DocumentReference '{"resourceType":"DocumentReference","content":[{"attachment":{"contentType":"application/pdf","url":"Binary/example-binary-id","title":"External Records"}}],"status":"current"}'# {#   "resourceType": "DocumentReference",#   "id": "example-doc-reference-id",#   "content": [#     {#       "attachment": {#         "contentType": "text/plain",#         "url": "https://storage.medplum.com/binary/...",#         "title": "External Records"#       }#     }#   ],#   "status": "current",#   ...# }
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```
+    curl 'https://api.medplum.com/fhir/R4/Binary?_filename=records.pdf' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: text/plain' \  --data-raw '{"resourceType":"Binary","contentType":"text/plain", "data": "$DATA"}' \# {#   "resourceType": "Binary",#   "id": "example-binary-id",#   "url": "https://storage.medplum.com/binary/..."#    ...# }  curl -X POST 'https://api.medplum.com/fhir/R4/DocumentReference' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \  --data-raw '{"resourceType":"DocumentReference","content":[{"attachment":{"contentType":"text/plain","url":"Binary/10c959e4-4d70-4c25-a58c-c1c4f604b15a","title":"External Records"}}],"status":"current"}' \  # {#   "resourceType": "DocumentReference",#   "id": "example-doc-reference-id",#   "content": [#     {#       "attachment": {#         "contentType": "text/plain",#         "url": "https://storage.medplum.com/binary/...",#         "title": "External Records"#       }#     }#   ],#   "status": "current",#   ...# }
+    ```
+  </Tab>
+</Tabs>
+
+<Check>
+  `DocumentReference.content.attachment.url` can refer to any external url. The Medplum server handles urls of the form "`Binary/id`" as a special case and converts them to pre-signed URLs at `storage.medplum.com`. You can read more about pre-signed URLs on the [AWS docs](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ShareObjectPreSignedURL.html)
+</Check>
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/charting/external-documents.md)
+
+Last updated on **Feb 20, 2026**

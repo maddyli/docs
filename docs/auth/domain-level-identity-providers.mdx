@@ -1,0 +1,111 @@
+---
+title: "Domain-level Identity Providers"
+description: "A Domain-level Identity Provider (DL-IDP) is a server-level configuration that sets up an external identity provider for all users from a given domain. This identity provider will be used for  Medplum applications the user logs into, . Domain-level providers are primarily used to ensure that all practitioners access Medplum data via your corporate identity solution."
+---
+
+Once a DL-IDP is enabled for mydomain.com, any user that attempts to sign in with an email on that domain ([name@mydomain.com](mailto:name@mydomain.com)) will be prompted to authenticate using the configured provider. Enabling DL-IDPs will apply to *all* emails at that domain, including dev accounts and [name+text@mydomain.com](mailto:name+text@mydomain.com) type emails.
+
+This guide demonstrates how to set up a DL-IDP, using Okta as an example provider.
+
+<Warning>
+  Setting up DL-IDPs on the Medplum Hosted instance requires an Enterprise account. If [self-hosting](/docs/self-hosting), setting it up requires super admin privileges.
+</Warning>
+
+## Example: Setting up Okta as a Domain-level Identity Provider[​](#example-setting-up-okta-as-a-domain-level-identity-provider "Direct link to Example: Setting up Okta as a Domain-level Identity Provider")
+
+### Okta Setup[​](#okta-setup "Direct link to Okta Setup")
+
+Enabling Okta requires configuration on the Okta side and the Medplum side. You will need to be an Okta admin to set up a App Integration on Okta.
+
+Click on "Create App Integration"
+
+![Okta Applications Page](/images/docs/auth/assets/images/okta-applications-710ae95ab859bd4e1e91a610cdab565c.png)
+
+When prompted, choose "**OIDC - OpenID Connect**" and "**Web Application**". Click "**Next**".
+
+![Okta App Integration Page](/images/docs/auth/assets/images/okta-app-integration-9bebba16d119953df22d5b65b2fe33d7.png)
+
+Use the following settings:
+
+* App integration name: Choose your preferred name, or "Medplum"
+
+* Grant Type
+
+  * 🔲 Client Credentials - unchecked
+  * ☑️ Authorization Code - checked
+  * 🔲 Refresh Token - unchecked
+  * 🔲 Implicit (hybrid) - unchecked
+
+* Sign-in redirect URIs
+
+  * 🔲 Allow wildcard - unchecked
+
+  * Callback URL - "\{medplumApiServerBaseUrl}/auth/external"
+
+    * For example:
+
+      * Medplum hosted apiServerBaseUrl is "[https://api.medplum.com](https://api.medplum.com)"
+      * So the callback URL is "[https://api.medplum.com/auth/external](https://api.medplum.com/auth/external)"
+
+* Sign-out redirect URIs: Leave blank
+
+* Trusted Origins: Leave blank
+
+![Okta Integration Config Page](/images/docs/auth/assets/images/okta-integration-config-b63ac7f45f46bfc87321b3adc7b99e2b.png)
+
+Scroll down to the Assignments section:
+
+* Assignments
+
+  * Controlled access
+
+    * Choose the level appropriate for your organization
+    * We recommend "Allow everyone in your organization to access" as a an account on Medplum is still required to be able to access
+
+  * ☑️ Enable immediate access - checked
+
+Then click "Save".
+
+![Okta Assignments Page](/images/docs/auth/assets/images/okta-assignments-72c8b73ecb4dd4756cb10159171508e7.png)
+
+On the next page, note the "Client ID" and "Client Secret", take note of those - they will be needed for the Medplum set up.
+
+### Medplum Setup[​](#medplum-setup "Direct link to Medplum Setup")
+
+To configure Okta as an external authentication provider, you will need 5 pieces of data:
+
+* Authorize URL
+* Token URL
+* UserInfo URL
+* Client ID
+* Client Secret
+
+Okta uses separate domains per organization. You will need your organization's Okta server. This is called the Okta "baseUrl". You can find it in the top-left menu of the Okta admin panel by clicking on your name when logged in.
+
+![Okta Find URL](/images/docs/auth/assets/images/okta-find-url-38b59f790f2fc19cd1b2d647b53fc08b.png)
+
+The "baseUrl" could look something like this `https://dev-12345678.okta.com` or could be a named subdomain like `https://mydomain.okta.com`. Once you have obtained it, construct the Authorize, Token and UserInfo URLs as follows:
+
+* Authorize URL = $\{baseUrl}/v1/authorize (e.g., "[https://dev-12345678.okta.com/oauth2/v1/authorize](https://dev-12345678.okta.com/oauth2/v1/authorize)")
+* Token URL = $\{baseUrl}/oauth2/v1/token (e.g., "[https://dev-12345678.okta.com/oauth2/v1/token](https://dev-12345678.okta.com/oauth2/v1/token)")
+* UserInfo URL = $\{baseUrl}/oauth2/v1/userinfo (e.g., "[https://dev-12345678.okta.com/oauth2/v1/userinfo](https://dev-12345678.okta.com/oauth2/v1/userinfo)")
+
+Client ID and Client secret will be the same as those obtained at the end of the previous section.
+
+Create a [`DomainConfiguration`](/docs/api/fhir/medplum/domainconfiguration) resource:
+
+* Add the values for the five elements above
+* Leave "useSubject" **unchecked**
+* Set the `domain` field to the users' email domain (e.g. "mydomain.com") **in all lower-case**. Once the resource has been saved, all new authentication requests from that domain will use Okta authentication.
+
+<Warning>
+  Configuring a DL-IDP on the Medplum Hosted service requires a Medplum team member, contact us at [hello@medplum.com](mailto:hello@medplum.com) to enable. For those self-hosting, setup below requires super admin privileges.
+</Warning>
+
+**Tags:**
+
+* [auth](/docs/tags/auth)
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/auth/domain-level-identity-providers.md)
+
+Last updated on **Feb 20, 2026**

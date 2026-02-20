@@ -1,0 +1,361 @@
+---
+title: "Overview"
+description: "This guide walks through how to  via the Medplum App and via API. Medplum supports multiple authentication options, but always maintains a representation of the user identities, and gives developers control over which authentication method to use for an identity, as well as what access controls are applied."
+---
+
+## Background: User Model[​](#background-user-model "Direct link to Background: User Model")
+
+Medplum has several resources that represent user identities. The following resources are fundamental to building a correctly functioning application. This table describes how identities are represented in the system, and provides links to the administrative settings in the [Medplum App](https://app.medplum.com).
+
+| Resource                                                        | Description                                                                                                                                                                                                                       | Medplum App                                                                                                              |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| [`User`](/docs/api/fhir/medplum/user)                           | A resource that represents a user identity. Users exist above the Project level and can only be self-updated.                                                                                                                     | None                                                                                                                     |
+| [`Project`](/docs/api/fhir/medplum/project)                     | A [Project](/docs/tutorials/register#medplum-projects) is an isolated set of resources. See the [Projects guide](/docs/access/projects)                                                                                           | [Project Admin](https://app.medplum.com/admin/project)                                                                   |
+| [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) | A ProjectMembership represents granting a user access to the resources within a Project. Inviting a user to a project, and specifying their `profile` and `accessPolicy` you can determine what set of resources they can access. | [Invite (Admins only)](https://app.medplum.com/admin/invite), [Users (Admins only)](https://app.medplum.com/admin/users) |
+
+### Users[​](#users "Direct link to Users")
+
+The [User](/docs/api/fhir/medplum/user) resource is the main resource that represents digital identity during authentication.
+
+[Users](/docs/api/fhir/medplum/user) can have two different scopes, `server` or `project`:
+
+* [Server scoped users](/docs/user-management/project-vs-server-scoped-users#server-scoped-users) tend to be administrators and developers that need to access multiple projects.
+* [Project scoped users](/docs/user-management/project-vs-server-scoped-users#project-scoped-users) tend to be clinicians and patients that only need access to a single project.
+
+See our guide on [Project vs Server Scoped Users](/docs/user-management/project-vs-server-scoped-users) for more details.
+
+### Profiles[​](#profiles "Direct link to Profiles")
+
+*Within* each project, a project member is represented by a specific FHIR resource, known as their **profile**. The `ProjectMembership.profile` element links the [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) to the profile resource.
+
+A user's profile can be one of the three resource types in the table below. Incorporating the resources in the table below into ProjectMembership enable sophisticated access controls, as [Access Policies](/docs/access/access-policies) can access the profile of the current user ([read more](/docs/access/access-policies#patient-access))
+
+| Resource                                                  | Description                                                                                                                             | Medplum App                                            |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| [`Patient`](/docs/api/fhir/resources/patient)             | Patient is a fundamental FHIR resource and linking it to an identity allows the simple use case of granting access to personal records. | [Patients](https://app.medplum.com/Patient)            |
+| [`Practitioner`](/docs/api/fhir/resources/practitioner)   | Practitioners are staff members of a healthcare organization and generally have access to multiple patients' data.                      | [Practitioner](https://app.medplum.com/Practitioner)   |
+| [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) | RelatedPerson is a family member or caregiver of a patient, who may be granted access to a small number of patient records              | [RelatedPerson](https://app.medplum.com/RelatedPerson) |
+
+There are several `ProjectMembership.profile` resources that are related to programmatic access, which serve as modifiers to the ProjectMembership resource (i.e. `ProjectMembership.profile`) and do not represent people, but rather applications that access data. This table describes the programmatic access profiles with links on where to set them up in the Medplum App.
+
+| Resource          | Description                                            | Medplum App                                                  |
+| ----------------- | ------------------------------------------------------ | ------------------------------------------------------------ |
+| ClientApplication | API Keys that allow programmatic access to resources   | [Client Applications](https://app.medplum.com/admin/clients) |
+| Bot               | Event driven [custom functions](/docs/bots/bot-basics) | [Bots](https://app.medplum.com/Bot)                          |
+
+## Creating a new Project[​](#creating-a-new-project "Direct link to Creating a new Project")
+
+### UI[​](#ui "Direct link to UI")
+
+The simplest way to create a project is to visit [https://app.medplum.com/register](https://app.medplum.com/register) and fill out the new project registration form.
+
+<Warning>
+  If you are self-hosting, replace `app.medplum.com` with `app.your-base-url.com`
+</Warning>
+
+### API[​](#api "Direct link to API")
+
+To create a new `Project` resource via the API, you will need to create a `ClientApplication` with super admin privileges.
+
+<Warning>
+  Super admin features can cause unrepairable damage. We highly recommend adding an [Access Policy](/docs/access/access-policies) to this `ClientApplication` to reduce it's privileges.
+</Warning>
+
+With is `ClientApplication`, you can create a `Project` resource and invite the a new user as a project admin.
+
+#### Create a New Project[​](#create-a-new-project "Direct link to Create a New Project")
+
+<Tabs>
+  <Tab title="Typescript">
+    ```
+    await medplum.createResource({  resourceType: 'Project',  name: 'ProjectName',  strictMode: true,});
+    ```
+  </Tab>
+
+  <Tab title="CLI">
+    ```
+    medplum post Project '{"resourceType":"Project","name":"ProjectName","strictMode":true}'
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```
+    curl 'https://api.medplum.com/admin/Project/' \  -X POST \  -H 'Authorization: Bearer ${accessToken}' \  -H 'Content-Type: application/json' \  --data-raw '{"resourceType":"Project","name":"ProjectName","strictMode":true}'
+    ```
+  </Tab>
+</Tabs>
+
+#### Invite a New User as an Admin[​](#invite-a-new-user-as-an-admin "Direct link to Invite a New User as an Admin")
+
+<Tabs>
+  <Tab title="Typescript">
+    ```
+    await medplum.post('admin/projects/example-project-id/invite', {  resourceType: 'Practitioner',  firstName: 'Alice',  lastName: 'Smith',  email: 'alicesmith@example.com',  admin: true,  scope: 'server',});
+    ```
+  </Tab>
+
+  <Tab title="CLI">
+    ```
+    medplum post admin/projects/example-project-id/invite \'{  "resourceType": "Practitioner",  "firstName": "Alice",  "lastName": "Smith",  "email": "alicesmith@example.com",  "admin": true}'
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```
+    curl 'https://api.medplum.com/admin/projects/example-project-id/invite' \  -H 'Authorization: Bearer ${accessToken}' \  -H 'Content-Type: application/json' \  --data-raw '{"resourceType":"Practitioner","firstName":"Alice","lastName":"Smith","email":"alicesmith@example.com","admin":true}'
+    ```
+  </Tab>
+</Tabs>
+
+## User Administration via Medplum App[​](#user-administration-via-medplum-app "Direct link to User Administration via Medplum App")
+
+Users in Medplum can be members of multiple projects, so cannot be edited directly. You'll need to invite a user to a project in order to grant access. If the user does not exist, it will be created when invited.
+
+### Creating Memberships[​](#creating-memberships "Direct link to Creating Memberships")
+
+Only administrators can invite users, and can do so on the [Invite](https://app.medplum.com/admin/invite) page. You can specify a role and [AccessPolicy](/docs/access/access-policies) at time of invite. The invite flow will do the following:
+
+1. Create a `User` if one does not already exist
+2. Create a FHIR resource (Patient, Practitioner or RelatedPerson)
+3. Create a ProjectMembership that links User, ProfileResource and access policy
+4. (Optional) send an email invite user
+
+<Warning>
+  Do not delete [`Patient`](/docs/api/fhir/resources/patient), [`Practitioner`](/docs/api/fhir/resources/practitioner) or [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) resources that belong to [`ProjectMemberships`](/docs/api/fhir/medplum/projectmembership). This will cause the login to be non-functional. Do not edit or change the [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resources directly. If you do delete one of these resources, you will need to register a new project.
+</Warning>
+
+### Deactivating Memberships[​](#deactivating-memberships "Direct link to Deactivating Memberships")
+
+To deactivate a user's access to a project without deleting their membership, you can update the `ProjectMembership` resource and set the `active` property to `false`.
+
+This is the preferred method for removing user access for several reasons:
+
+* **Immediate Effect**: The user's access is immediately revoked.
+* **Audit Trail**: The membership record is preserved, maintaining the history of the user's access.
+* **Clean Data**: It avoids the need to delete and recreate memberships if access needs to be restored later.
+* **Cache Consistency**: Deleting memberships can sometimes cause caching issues or "bursts" of deleted resource events. Deactivation is a cleaner state change.
+
+### Removing Memberships[​](#removing-memberships "Direct link to Removing Memberships")
+
+To remove users from the existing project navigate to your [Project settings](https://app.medplum.com/admin/project) and to the Users and Patient tabs respectively. Click on a specific users or patients and click **Remove User**.
+
+We highly recommend leaving the associated FHIR resource (Patient, Practitioner, etc.) in place for audibility, record keeping and in case the membership needs to be reconstructed for some reason.
+
+### Searching for Project Members[​](#searching-for-project-members "Direct link to Searching for Project Members")
+
+You can search for all project members by performing a search for all `ProjectMembership` resources
+
+#### Example: Search for all project members[​](#example-search-for-all-project-members "Direct link to Example: Search for all project members")
+
+<Tabs>
+  <Tab title="Typescript">
+    ```
+    await medplum.searchResources('ProjectMembership');
+    ```
+  </Tab>
+
+  <Tab title="CLI">
+    ```
+    medplum get 'ProjectMembership'
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```
+    curl 'https://api.medplum.com/fhir/R4/ProjectMembership' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+    ```
+  </Tab>
+</Tabs>
+
+You can also use the `profile-type` search parameter to narrow your search
+
+#### Example: Search for all human members[​](#example-search-for-all-human-members "Direct link to Example: Search for all human members")
+
+<Tabs>
+  <Tab title="Typescript">
+    ```
+    await medplum.searchResources('ProjectMembership', 'profile-type:not=ClientApplication,Bot');
+    ```
+  </Tab>
+
+  <Tab title="CLI">
+    ```
+    medplum get 'ProjectMembership?profile-type:not=ClientApplication,Bot'
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```
+    curl 'https://api.medplum.com/fhir/R4/ProjectMembership?profile-type:not=ClientApplication,Bot' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+    ```
+  </Tab>
+</Tabs>
+
+#### Example: Search for all project `Patients`[​](#example-search-for-all-project-patients "Direct link to example-search-for-all-project-patients")
+
+<Tabs>
+  <Tab title="Typescript">
+    ```
+    await medplum.searchResources('ProjectMembership', 'profile-type=Patient');
+    ```
+  </Tab>
+
+  <Tab title="CLI">
+    ```
+    medplum get 'ProjectMembership?profile-type=Patient'
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```
+    curl 'https://api.medplum.com/fhir/R4/ProjectMembership?profile-type=Patient' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+    ```
+  </Tab>
+</Tabs>
+
+#### Example: Search for all project `Practitioners`[​](#example-search-for-all-project-practitioners "Direct link to example-search-for-all-project-practitioners")
+
+<Tabs>
+  <Tab title="Typescript">
+    ```
+    await medplum.searchResources('ProjectMembership', 'profile-type=Practitioner');
+    ```
+  </Tab>
+
+  <Tab title="CLI">
+    ```
+    medplum get 'ProjectMembership?profile-type=Practitioner'
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```
+    curl 'https://api.medplum.com/fhir/R4/ProjectMembership?profile-type=Practitioner' \  -H 'authorization: Bearer $ACCESS_TOKEN' \  -H 'content-type: application/fhir+json' \
+    ```
+  </Tab>
+</Tabs>
+
+Refer to our [search documentation](/docs/search/basic-search) for more details on FHIR search
+
+### Promote Existing User to Admin[​](#promote-existing-user-to-admin "Direct link to Promote Existing User to Admin")
+
+If you are already an admin, you can promote other existing users to an admin as well. To do so navigate to the [Project Admin panel](https://app.medplum.com/admin/project) and go to the Users tab. From here, select the `User` you want to make an admin.
+
+Check the box under the `Admin` label, and then save the user. This user will now be an admin on your project.
+
+![Promote To Admin](/images/docs/assets/images/promote-to-admin-e9a9778c5791eed84982e9dd47d611c7.png)
+
+To *invite* a user as an admin in the app, please see the [Invite a User docs](/docs/app/invite).
+
+Promoting a user to admin can also be done programmatically. To do so, you will need to update the user's `ProjectMembership`.
+
+<Tabs>
+  <Tab title="Typescript">
+    ```
+    // The user's project membershipconst membership = {  resourceType: 'ProjectMembership',  id: 'example-membership-id',  // ...  admin: false,};// For the updated membership, create a new resource and spread the original in, only changing the admin fieldconst updatedMembership = {  ...membership,  admin: true,};// Finally, post the updated membership to the API to make the user an adminawait medplum.post(`admin/projects/example-project-id/members/example-membership-id`, updatedMembership);
+    ```
+  </Tab>
+
+  <Tab title="CLI">
+    ```
+    medplum patch 'admin/projects/example-project-id/members/example-membership-id' '[{"op": "replace", "path": "/admin", "value": true}]'
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```
+    curl -X PATCH 'https://api.medplum.com/admin/projects/example-project-id/members/example-membership-id' \  -H 'Authorization: Bearer ${accessToken} \  -H 'Content-Type: application/json-patch+json' \  --data-raw '[{    "op": "replace",    "path": "/admin",    "value": true  }]'
+    ```
+  </Tab>
+</Tabs>
+
+It is important to spread the original `ProjectMembership` to ensure that you are only updating the `admin` field.
+
+## Invite via API[​](#invite-via-api "Direct link to Invite via API")
+
+Inviting users can be done programmatically using the [`/invite` endpoint](/docs/api/project-admin/invite). Like inviting via the [Medplum App](https://app.medplum.com), this can only be done by [project admins](/docs/access/admin#project-admin).
+
+Prepare JSON payload:
+
+```
+{  "resourceType": "Patient",  "firstName": "Homer",  "lastName": "Simpson",  "email": "homer@example.com",  "sendEmail": false}
+```
+
+Then POST to the [`/invite` endpoint](/docs/api/project-admin/invite):
+
+<Tabs>
+  <Tab title="Typescript">
+    ```
+    await medplum.post('/admin/projects/example-project-id/invite', {  resourceType: 'Patient',  firstName: 'Homer',  lastName: 'Simpson',  email: 'homer@example.com',  sendEmail: false,});
+    ```
+  </Tab>
+
+  <Tab title="CLI">
+    ```
+    medplum post 'admin/projects/example-project-id/invite' '{"resourceType":"Patient","firstName":"Homer","lastName":"Simpson","email":"homer@example.com", "sendEmail":"false"}'
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```
+    curl 'https://api.medplum.com/admin/projects/example-project-id/invite' \  -H 'Authorization: Bearer ${accessToken}' \  -H 'Content-Type: application/json' \  --data-raw '{"resourceType":"Patient","firstName":"Homer","lastName":"Simpson","email":"homer@example.com", "sendEmail":"false"}'
+    ```
+  </Tab>
+</Tabs>
+
+The [`/invite` endpoint](/docs/api/project-admin/invite) creates a [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership). The `ProjectMembership` resource includes additional properties to customize the user experience. The [`/invite` endpoint](/docs/api/project-admin/invite) accepts a partial `ProjectMembership` in the `membership` property where you can provide membership details.
+
+For example, use `admin: true` to make the new user a project administrator:
+
+```
+{  "resourceType": "Patient",  "firstName": "Homer",  "lastName": "Simpson",  "email": "homer@example.com",  "membership": {    "admin": true,  },}
+```
+
+Or use the `access` property to specify a user's `AccessPolicy` with optional parameters.
+
+```
+{  "resourceType": "Patient",  "firstName": "Homer",  "lastName": "Simpson",  "email": "homer@example.com",  "membership": {    "access": [      {        "policy": { "reference": "AccessPolicy/123" },        "parameter": [          {            "name": "provider_organization",            "valueReference": { "reference": "Organization/abc" }          }        ]      },      {        "policy": { "reference": "AccessPolicy/123" },        "parameter": [          {            "name": "provider_organization",            "valueReference": { "reference": "Organization/def" }          }        ]      }    ]  }}
+```
+
+For more information, see the [`/invite` endpoint API docs](/docs/api/project-admin/invite)
+
+See [Access Control](/docs/access/access-policies) for more details.
+
+<Warning>
+  Creating Practitioners via API is an advanced scenario and should be done with extreme caution. If you are planning to do programmatic creation of Practitioners, we highly recommend trying it in a test environment first and ensuring that the logins and associated access controls behave as expected.
+</Warning>
+
+## Login Flowchart[​](#login-flowchart "Direct link to Login Flowchart")
+
+The following diagram shows an overview of the process. Endpoints are provided to illustrate and inform, but implementors should only use [OAuth](/docs/api/oauth) endpoints or React components.
+
+![Auth flow](/images/docs/assets/images/auth-flow-17004f7026b38ca18af50252798f7653.png)
+
+[Click to Enlarge](/assets/files/auth-flow-17004f7026b38ca18af50252798f7653.png)
+
+There are four major stages in the login flow: **Domain**, **Credentials**, **Profile**, **Scope**. The table below describes the authentication actions the Medplum server performs at each stage, along with the associated endpoints.
+
+| Stage       | Description                                                                                                                                                             | Involved endpoints                      |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| Domain      | In the Domain phase, the preferred authentication method is determined, either by the user selecting a method, by configuration or based on email domain.               | `auth/method` `auth/external`           |
+| Credentials | In the Credentials phase of login the authentication credentials are collected and sent to service of choice and authentication performed.                              | `auth/login` `auth/external` `auth/mfa` |
+| Profile     | In the Profile phase, if the user is a member of multiple projects, one must be selected to proceed                                                                     | `auth/profile` `auth/me`                |
+| Scope       | If SMART-on-FHIR scopes were provided, they need to be selected and access to them determined. Access control is applied where configured and authorization determined. | `auth/scope`                            |
+
+## Resources and Reference[​](#resources-and-reference "Direct link to Resources and Reference")
+
+* See [authentication functions](/docs/sdk/core.medplumclient) in the TypeScript SDK
+* [User profile](/docs/sdk/core.medplumclient.getprofile) in the TypeScript SDK
+* [OAuth endpoints](/docs/api/oauth) reference
+* [Medplum resources](/docs/api/fhir/medplum) related to authentication and authorization
+* [User registration](https://storybook.medplum.com/?path=/docs/medplum-registerform--basic) react component
+* [Sign in form](https://storybook.medplum.com/?path=/docs/medplum-signinform--basic) react component
+* [Auth Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aauth) on Github
+
+**Tags:**
+
+* [auth](/docs/tags/auth)
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/user-management/index.md)
+
+Last updated on **Feb 20, 2026**

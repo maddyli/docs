@@ -1,0 +1,46 @@
+---
+title: "Using External IDs"
+description: "By default, Medplum uses email address as a unique identifier for a user. When using External Identity Providers, you may instead want to use the external ID rather than email. This document describes the additional changes to use external ID."
+---
+
+## Configure client[​](#configure-client "Direct link to Configure client")
+
+Navigate to "Project Admin" and then "Clients".
+
+Find your Client Application.
+
+Set `ClientApplication.identityProvider.useSubject` to `true`
+
+## Invite user[​](#invite-user "Direct link to Invite user")
+
+Prepare JSON payload:
+
+```
+{  "resourceType": "Patient",  "firstName": "Homer",  "lastName": "Simpson",  "externalId": "MY_EXTERNAL_ID"}
+```
+
+<Check>
+  Auth0 can optionally prefix subject with the identity provider, such as "google-oauth2|110925489055200000000". Only use the portion after the "|" such as "110925489055200000000".
+</Check>
+
+Then POST to the `/invite` endpoint:
+
+```
+curl 'https://${baseUrl}/admin/projects/${projectId}/invite' \  -H 'Authorization: Bearer ${accessToken}' \  -H 'Content-Type: application/json' \  --data-raw '{"resourceType":"Patient","firstName":"Homer","lastName":"Simpson","externalId":"110925489055200000000"}'
+```
+
+## Login example[​](#login-example "Direct link to Login example")
+
+You can then use the external auth provider as described in [External Identity Providers](/docs/auth/external-identity-providers)
+
+This will also work with the example repo:
+
+> [https://github.com/medplum/medplum-client-external-idp-demo](https://github.com/medplum/medplum-client-external-idp-demo)
+
+**Tags:**
+
+* [auth](/docs/tags/auth)
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/user-management/external-ids.md)
+
+Last updated on **Feb 20, 2026**

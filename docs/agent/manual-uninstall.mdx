@@ -1,0 +1,38 @@
+---
+title: "Manual Uninstall"
+description: "The official agent installer for Microsoft Windows includes an uninstaller. However, if you need to manually uninstall the agent, follow these steps."
+---
+
+## Delete the Agent Service[​](#delete-the-agent-service "Direct link to Delete the Agent Service")
+
+As an administrator, open a command prompt and run:
+
+```
+sc.exe stop MedplumAgentsc.exe delete MedplumAgent
+```
+
+## Delete the Agent Files[​](#delete-the-agent-files "Direct link to Delete the Agent Files")
+
+<Info>
+  Make sure the agent is stopped and deleted before attempting to delete the files.
+</Info>
+
+<Warning>
+  This will delete all configuration files and log data.
+</Warning>
+
+As an administrator, delete all files in the following directories:
+
+1. `C:\Program Files\MedplumAgent`
+2. `C:\Users\$USERNAME\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Medplum Agent`
+
+## Delete the Agent Registry Keys[​](#delete-the-agent-registry-keys "Direct link to Delete the Agent Registry Keys")
+
+As an administrator, open the registry editor and delete the following keys (if they exist):
+
+1. `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\MedplumAgent`
+2. `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\MedplumAgent`
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/agent/manual-uninstall.md)
+
+Last updated on **Feb 20, 2026**

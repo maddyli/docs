@@ -1,0 +1,114 @@
+---
+title: "Custom Emails"
+description: "Some server actions send email messages to users. For example, when a user creates a new account, the server sends a \"Welcome\" email message. On Medplum's hosted environment, the email will include a link to \"...\"."
+---
+
+The two main email messages are:
+
+1. Welcome email - when a new user account is created
+2. Password reset email - when a user requests a password reset
+
+Medplum fully supports creating a white-label experience where users do not see any Medplum branding. That includes overriding all email behavior.
+
+This document describes the steps to send custom email messages.
+
+<Info>
+  By default, this will work for Patient Users. If you want to process custom emails for Practitioner Users, the Practitioners must be [invited](/docs/api/project-admin/invite) as project scoped users. See [Project vs Server Scoped Users](/docs/user-management/project-vs-server-scoped-users) for more information.
+</Info>
+
+In short, here are the key steps:
+
+1. Setup reCAPTCHA (required for password reset emails, optional for welcome emails)
+2. Create a "Reset Password" page in your application (required for password reset emails, optional for welcome emails)
+3. Create a "Set Password" page in your application
+4. Create a Medplum Bot that processes new `UserSecurityRequest` resources
+5. Create a FHIR Subscription that connects `UserSecurityRequest` resources to the bot
+
+## Setup reCAPTCHA[​](#setup-recaptcha "Direct link to Setup reCAPTCHA")
+
+<Info>
+  **Optional** reCAPTCHA is only required for Password Reset emails. reCAPTCHA is optional for Welcome emails.
+</Info>
+
+Medplum requires reCAPTCHA for all unauthenticated API requests. "Reset Password" is necessarily unauthenticated, so you will need to setup reCAPTCHA first.
+
+Visit the [reCAPTCHA website](https://www.google.com/recaptcha/about/) to get started. You will need to create a new reCAPTCHA v3 key. Make note of the "Site Key" and "Secret Key".
+
+Once you have your "Site Key" and "Secret Key", you will need to configure your Medplum project. Go to [Projects](https://app.medplum.com/Project) and click "Edit...". Enter the "Site Key" and "Secret Key" in the "reCAPTCHA" section.
+
+## Reset Password Page[​](#reset-password-page "Direct link to Reset Password Page")
+
+<Info>
+  **Optional** Reset Password Page is only required for Password Reset emails. Reset Password Page is optional for Welcome emails.
+</Info>
+
+In your custom application, you will need a "Reset Password" page. This will be the page where users go to initiate the reset password flow. For a full example of a "Reset Password" page, check out the source to [`ResetPasswordPage.tsx`](https://github.com/medplum/medplum/blob/main/packages/app/src/ResetPasswordPage.tsx) for the Medplum App.
+
+This page is conceptually simple, as the only input is an email. However, you must also include the `projectId` and `recaptchaToken` in the request body.
+
+Key functions of the page:
+
+* Initialize reCAPTCHA
+* Prompts the user for `email`
+* Sends the `email`, `projectId`, and `recaptchaToken` to the [/auth/resetpassword](/docs/api/auth/resetpassword) API endpoint
+
+See the [`ResetPasswordPage.tsx`](https://github.com/medplum/medplum/blob/main/packages/app/src/ResetPasswordPage.tsx) for a full example.
+
+## Set Password Page[​](#set-password-page "Direct link to Set Password Page")
+
+In your custom application, you will need a "Set Password" page. This will be the page where users go to confirm their email address. For a full example of a "Set Password" page, check out the source to [`SetPasswordPage.tsx`](https://github.com/medplum/medplum/blob/main/packages/app/src/SetPasswordPage.tsx) for the Medplum App.
+
+Key functions of the page:
+
+* Receives `id` and `secret` from URL parameters
+* Prompts the user for `password` and `confirmPassword`
+* Verifies that `password` and `confirmPassword` match
+* Sends the `id`, `secret`, and `password` to the [/auth/setpassword](/docs/api/auth/setpassword) API endpoint
+
+## Password Change Request Bot[​](#password-change-request-bot "Direct link to Password Change Request Bot")
+
+Create a Medplum Bot to handle new `UserSecurityRequest` resources. The bot will send a custom email message to the user.
+
+<Check>
+  If you are new to Medplum Bots, you may want to read the [Bots](/docs/bots) documentation first.
+</Check>
+
+This Bot will use `ProjectMembership` and `UserSecurityRequest` resources, so the Bot must be a "Project Admin" to access these resources.
+
+<Note>
+  You will also need the `email` project feature flag turned on to allow Bots to send emails. See [project feature flags](/docs/self-hosting/project-settings#project-feature-flags).
+</Note>
+
+Here is a full example of a Bot that sends a custom email message:
+
+```
+import type { BotEvent, MedplumClient, ProfileResource } from '@medplum/core';import { getDisplayString, getReferenceString } from '@medplum/core';import type { ProjectMembership, Reference, UserSecurityRequest } from '@medplum/fhirtypes';export async function handler(medplum: MedplumClient, event: BotEvent<UserSecurityRequest>): Promise<any> {  // This Bot executes on every new UserSecurityRequest resource.  // UserSecurityRequest resources are created when a new user registers or is invited to a project.  // UserSecurityRequest resources are only available to project administrators.  // Therefore, this Bot must be configured as a project admin.  const pcr = event.input;  // Get the user from the UserSecurityRequest.  const user = await medplum.readReference(pcr.user);  // Get the project membership for the user.  // ProjectMembership is an administrative resource that connects a User and a Project.  const membership = (await medplum.searchOne('ProjectMembership', {    user: getReferenceString(user),  })) as ProjectMembership;  // From the ProjectMembership, we can retrieve the user's profile.  // Here, "profile" means FHIR profile: the FHIR resource that represents the user's identity.  // In general, the profile will be a FHIR Patient or a FHIR Practitioner.  const profile = await medplum.readReference(membership.profile as Reference<ProfileResource>);  // Get the email from the user.  const email = user.email as string;  // Generate the setPasswordUrl based on the id and secret.  // You will need to use these values in your application to confirm the user account.  const setPasswordUrl = `https://example.com/setpassword/${pcr.id}/${pcr.secret}`;  // Now we can send the email to the user.  // This is a simple plain text email to the user.  // Medplum supports sending HTML emails as well via the nodemailer API.  // Learn more: https://nodemailer.com/extras/mailcomposer/  if (pcr.type === 'invite') {    // This UserSecurityRequest was created as part of a new user invite flow.    // Send a Welcome email to the user.    await medplum.sendEmail({      to: email,      subject: 'Welcome to Example Health!',      text: [        `Hello ${getDisplayString(profile)}`,        '',        'Please click on the following link to create your account:',        '',        setPasswordUrl,        '',        'Thank you,',        'Example Health',        '',      ].join('\n'),    });  } else {    // This UserSecurityRequest was created as part of a password reset flow.    // Send a Password Reset email to the user.    await medplum.sendEmail({      to: email,      subject: 'Example Health Password Reset',      text: [        `Hello ${getDisplayString(profile)}`,        '',        'Someone requested to reset your Example Health password.',        '',        'To reset your password, please click on the following link:',        '',        setPasswordUrl,        '',        'If you received this in error, you can safely ignore it.',        '',        'Thank you,',        'Example Health',        '',      ].join('\n'),    });  }  return true;}
+```
+
+Create, save, and deploy your bot. Make note of the Bot ID.
+
+## FHIR Subscription[​](#fhir-subscription "Direct link to FHIR Subscription")
+
+Create a FHIR Subscription that connects `UserSecurityRequest` resources to the bot. The subscription will trigger the bot when a new `ProjectMembership` resource is created.
+
+Go to [Subscriptions](https://app.medplum.com/Subscription) and click "New\...".
+
+Enter the following values:
+
+* Status = `active`
+* Reason = `New Password Change Request`
+* Criteria = `UserSecurityRequest`
+* Channel Type = `rest-hook`
+* Channel Endpoint = `Bot/YOUR_BOT_ID`
+
+## Testing[​](#testing "Direct link to Testing")
+
+To test your custom welcome email, create a new user account. The user will receive a custom email message.
+
+**Tags:**
+
+* [auth](/docs/tags/auth)
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/user-management/custom-emails.mdx)
+
+Last updated on **Feb 20, 2026**

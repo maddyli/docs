@@ -1,0 +1,41 @@
+---
+title: "Overview"
+description: "Medplum is an open source healthcare development platform that you can deploy in your own environment. This guide provides detailed instructions for self-hosting Medplum across various infrastructure options."
+---
+
+These guides are designed for DevOps engineers and system administrators who have experience managing production healthcare systems.
+
+<Warning>
+  Thinking about self-hosting? Take a look at our [self-hosting vs. cloud guide](/docs/self-hosting/considerations) to help you decide if self-hosting is for you.
+</Warning>
+
+## Installation Options[​](#installation-options "Direct link to Installation Options")
+
+### [Install on AWS](/docs/self-hosting/install-on-aws) (Recommended)[​](#install-on-aws-recommended "Direct link to install-on-aws-recommended")
+
+Deploy Medplum on Amazon Web Services using our industrial-strength AWS CDK and CloudFormation templates. This deployment option, which we use for our own hosted service, provides enterprise-grade scalability with automated setup of VPCs, ECS clusters, load balancers, and other critical infrastructure components.
+
+### [Install on Ubuntu](/docs/self-hosting/install-on-ubuntu)[​](#install-on-ubuntu "Direct link to install-on-ubuntu")
+
+Deploy Medplum directly on Ubuntu servers using our official APT repository ([apt.medplum.com](https://apt.medplum.com/)). This production-ready configuration offers a streamlined installation process while maintaining full control over your infrastructure.
+
+### [Install on GCP](/docs/self-hosting/install-on-gcp) (Beta)[​](#install-on-gcp-beta "Direct link to install-on-gcp-beta")
+
+Deploy Medplum on Google Cloud Platform using our Terraform configurations. Validated for production use, this deployment option provides a robust foundation, but offers a less-automated setup and requires additional operational expertise.
+
+### [Install on Azure](/docs/self-hosting/install-on-azure) (Beta)[​](#install-on-azure-beta "Direct link to install-on-azure-beta")
+
+Deploy Medplum on Azure using our Terraform configurations. Validated for production use, this deployment option provides a robust foundation, but offers a less-automated setup and requires additional operational expertise.
+
+### [Install from Scratch](/docs/self-hosting/install-from-scratch)[​](#install-from-scratch "Direct link to install-from-scratch")
+
+Learn how to build and deploy Medplum from source code on bare metal infrastructure. This option provides an in-depth understanding of Medplum's architecture and components, making it ideal for educational purposes or custom deployments.
+
+## Additional Resources[​](#additional-resources "Direct link to Additional Resources")
+
+* Explore [self-hosting articles](/blog/tags/self-host) on the Medplum blog
+* Track [self-hosting features and improvements](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aself-host) on GitHub
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/self-hosting/index.md)
+
+Last updated on **Feb 20, 2026**

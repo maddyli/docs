@@ -1,0 +1,71 @@
+---
+title: "Branding and Customization"
+description: "When building an EHR, you often want to change the logo and name of your platform for clarity or branding. In Medplum, this is simple:"
+---
+
+1. Get your Logo ready
+2. Edit your `packages/app/.env` file
+3. Build and see your results
+
+## Adding Your Logo[​](#adding-your-logo "Direct link to Adding Your Logo")
+
+### Local file[​](#local-file "Direct link to Local file")
+
+Drop your logo into the static folder:
+
+```
+packages/app/static/img/your-logo.svg
+```
+
+Files in `packages/app/static/` are served at the root of your app, so this becomes `/img/your-logo.svg`.
+
+### External URL[​](#external-url "Direct link to External URL")
+
+Or host your logo elsewhere and use the full URL:
+
+```
+https://cdn.example.com/your-logo.svg
+```
+
+<Check>
+  Use SVG format when possible — they scale perfectly and have smaller file sizes.
+</Check>
+
+## Configuration[​](#configuration "Direct link to Configuration")
+
+Add your branding variables to `packages/app/.env`:
+
+### Environment Variables[​](#environment-variables "Direct link to Environment Variables")
+
+```
+MEDPLUM_LOGO_URL=/img/your-logo.svgMEDPLUM_APP_NAME=Your Health Platform
+```
+
+<Note>
+  These are **build-time** variables. You must rebuild the app after any changes.
+</Note>
+
+Then build and run:
+
+```
+cd packages/appnpm run buildnpm run dev
+```
+
+For production deployments, see [Install from scratch](/docs/self-hosting/install-from-scratch) or [Install on AWS](/docs/self-hosting/install-on-aws).
+
+## Troubleshooting[​](#troubleshooting "Direct link to Troubleshooting")
+
+**Logo not showing?**
+
+* Check the file exists at the path you specified
+* Make sure you rebuilt after changing `.env`
+* Clear your browser cache
+
+**App name not changing?**
+
+* Variable must be exactly `MEDPLUM_APP_NAME`
+* Rebuild and clear cache
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/self-hosting/branding.md)
+
+Last updated on **Feb 20, 2026**

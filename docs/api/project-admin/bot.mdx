@@ -1,0 +1,45 @@
+---
+title: "Bot Endpoint"
+---
+
+## POST `/admin/projects/:projectId/bot`[​](#post-adminprojectsprojectidbot "Direct link to post-adminprojectsprojectidbot")
+
+Creates a new [Medplum Bot](/docs). Posting to this endpoint creates a [`Bot`](/docs/api/fhir/medplum/bot) resource and a corresponding [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resource.
+
+### Parameters[​](#parameters "Direct link to Parameters")
+
+```
+{  name: string;  description?: string;  accessPolicy?: Reference<AccessPolicy>;}
+```
+
+### Example request[​](#example-request "Direct link to Example request")
+
+<Tabs>
+  <Tab title="Typescript">
+    ```
+    await medplum.post('admin/projects/:projectId/bot', {  name: 'Hello World Bot',  description: 'Hello world',  accessPolicy: {    reference: 'AccessPolicy/access-policy-id',  },});
+    ```
+  </Tab>
+
+  <Tab title="CLI">
+    ```
+    medplum post admin/projects/:projectId/bot \'{  "name": "Hello World Bot",  "description": "Hello world",  "accessPolicy": {    "reference": "AccessPolicy/access-policy-id"  }}'
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```
+    curl https://api.medplum.com/admin/projects/:projectId/bot \  -H "Authorization: Bearer $TOKEN" \  -H "Content-Type: application/json" \  -d '{  "name": "Hello World Bot",  "description": "Hello world",  "accessPolicy": {    "reference": "AccessPolicy/:access-policy-id"  }'
+    ```
+  </Tab>
+</Tabs>
+
+### Example Response[​](#example-response "Direct link to Example Response")
+
+```
+{  resourceType: 'Bot',  name: 'Hello World Bot',  description: 'Hello world',  runtimeVersion: 'awslambda',  sourceCode: {    contentType: 'text/typescript',    title: 'index.ts',    url: 'Binary/:uuid'  },  id: ':bot-uuid',  meta: {    project: ':projectId',    //...  },}
+```
+
+[Edit this page](https://github.com/medplum/medplum/blob/main/packages/docs/docs/api/project-admin/bot.md)
+
+Last updated on **Feb 20, 2026**
